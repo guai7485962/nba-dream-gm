@@ -1,0 +1,8 @@
+# NBA 夢之隊 GM — 本機版依賴套件
+# 安裝： pip install -r requirements.txt
+
+nba_api>=1.6.0        # NBA 官方 stats 端點的 Python 包裝（免費、免金鑰）
+fastapi==0.115.0      # 本機 API 伺服器框架
+uvicorn==0.32.0       # 跑 FastAPI 的伺服器
+requests==2.32.3      # nba_api 底層需要
+beautifulsoup4>=4.12  # 薪資爬蟲用

@@ -1,0 +1,36 @@
+name: 每日更新 NBA 球員數據並部署
+
+on:
+  schedule:
+    - cron: '0 15 * * *'   # 每天台灣時間 23:00 自動執行
+  workflow_dispatch:         # 也可以在 GitHub 網頁手動觸發
+
+jobs:
+  update-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 取得程式碼
+        uses: actions/checkout@v4
+
+      - name: 設定 Python 3.13
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: 安裝套件
+        run: pip install -r requirements.txt
+
+      - name: 抓取 NBA 球員數據（含真實薪資）
+        run: python fetch_players.py --real-salary
+
+      - name: 建置靜態 PWA
+        run: python build_static.py
+
+      - name: 部署到 Netlify
+        uses: netlify/actions/cli@master
+        with:
+          args: deploy --dir=dist --prod
+        env:
+          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+          NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}

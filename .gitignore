@@ -1,0 +1,5 @@
+players.db
+dist/
+__pycache__/
+*.pyc
+_debug_bref.py

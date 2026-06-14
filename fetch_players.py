@@ -23,7 +23,8 @@ import database as db
 from ovr import calc_ovr, estimate_salary
 
 REQUEST_DELAY = 0.6
-MIN_GAMES = 20
+MIN_GAMES = 5      # 涵蓋深度陣容（深板凳球員場次少，OVR 自然偏低當角色球員）
+DEFAULT_TOP = 450  # 30 隊 × 約 15 人，讓每隊有真實深度
 
 
 def current_season():
@@ -262,8 +263,8 @@ def lookup_salary(player_name, sal_map):
 
 def main():
     ap = argparse.ArgumentParser(description="抓取 NBA 球員數據並寫入資料庫")
-    ap.add_argument("--top", type=int, default=150,
-                    help="抓取 OVR 前幾名球員（預設 150）")
+    ap.add_argument("--top", type=int, default=DEFAULT_TOP,
+                    help=f"抓取 OVR 前幾名球員（預設 {DEFAULT_TOP}）")
     ap.add_argument("--season", default=SEASON,
                     help="球季，例如 2024-25")
     ap.add_argument("--real-salary", action="store_true",

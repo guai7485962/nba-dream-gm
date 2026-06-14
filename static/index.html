@@ -220,23 +220,43 @@ function calcOvr(p){
   return Math.max(68,Math.min(99,Math.round(v)));
 }
 /* ============ 常數 ============ */
-const CAP=230, MIN_R=8, MAX_R=13, ROUNDS=28;
+const CAP=230, MIN_R=8, MAX_R=15, REG_GAMES=58, ROUNDS=58;
+const PLAYOFF_TEAMS=16; // 前 16 強進季後賽（含 Play-in）
+const DRAFT_OFFERS=10; // 選秀每批 10 人
+const DRAFT_SLOTS=[0,6,12,18]; // 選秀每 6 小時自動刷新，每個時段給 1 次免費手動刷新
 const SLOT_HOURS=[2,8,14,20]; // 每天 4 場：02:00 / 08:00 / 14:00 / 20:00
 const NBA_TEAMS=[
- {name:"洛杉磯湖人",abbr:"LAL",c:"#552583"},
+ {name:"亞特蘭大老鷹",abbr:"ATL",c:"#E03A3E"},
  {name:"波士頓塞爾提克",abbr:"BOS",c:"#007A33"},
- {name:"金州勇士",abbr:"GSW",c:"#1D428A"},
- {name:"密爾瓦基公鹿",abbr:"MIL",c:"#00471B"},
- {name:"丹佛金塊",abbr:"DEN",c:"#0E2240"},
- {name:"邁阿密熱火",abbr:"MIA",c:"#98002E"},
- {name:"鳳凰城太陽",abbr:"PHX",c:"#E56020"},
- {name:"費城76人",abbr:"PHI",c:"#006BB6"},
- {name:"達拉斯獨行俠",abbr:"DAL",c:"#00538C"},
- {name:"紐約尼克",abbr:"NYK",c:"#F58426"},
+ {name:"布魯克林籃網",abbr:"BKN",c:"#000000"},
+ {name:"夏洛特黃蜂",abbr:"CHA",c:"#1D1160"},
+ {name:"芝加哥公牛",abbr:"CHI",c:"#CE1141"},
  {name:"克里夫蘭騎士",abbr:"CLE",c:"#860038"},
- {name:"奧克拉荷馬雷霆",abbr:"OKC",c:"#007AC1"}
+ {name:"達拉斯獨行俠",abbr:"DAL",c:"#00538C"},
+ {name:"丹佛金塊",abbr:"DEN",c:"#0E2240"},
+ {name:"底特律活塞",abbr:"DET",c:"#C8102E"},
+ {name:"金州勇士",abbr:"GSW",c:"#1D428A"},
+ {name:"休士頓火箭",abbr:"HOU",c:"#CE1141"},
+ {name:"印第安納溜馬",abbr:"IND",c:"#002D62"},
+ {name:"洛杉磯快艇",abbr:"LAC",c:"#C8102E"},
+ {name:"洛杉磯湖人",abbr:"LAL",c:"#552583"},
+ {name:"曼菲斯灰熊",abbr:"MEM",c:"#5D76A9"},
+ {name:"邁阿密熱火",abbr:"MIA",c:"#98002E"},
+ {name:"密爾瓦基公鹿",abbr:"MIL",c:"#00471B"},
+ {name:"明尼蘇達灰狼",abbr:"MIN",c:"#0C2340"},
+ {name:"紐奧良鵜鶘",abbr:"NOP",c:"#0C2340"},
+ {name:"紐約尼克",abbr:"NYK",c:"#F58426"},
+ {name:"奧克拉荷馬雷霆",abbr:"OKC",c:"#007AC1"},
+ {name:"奧蘭多魔術",abbr:"ORL",c:"#0077C0"},
+ {name:"費城76人",abbr:"PHI",c:"#006BB6"},
+ {name:"鳳凰城太陽",abbr:"PHX",c:"#E56020"},
+ {name:"波特蘭辦磚工",abbr:"POR",c:"#E03A3E"},
+ {name:"沙加緬度國王",abbr:"SAC",c:"#5A2D81"},
+ {name:"聖安東尼奧馬刺",abbr:"SAS",c:"#C4CED4"},
+ {name:"多倫多暴龍",abbr:"TOR",c:"#CE1141"},
+ {name:"猶他爵士",abbr:"UTA",c:"#002B5C"},
+ {name:"華盛頓巫師",abbr:"WAS",c:"#002B5C"}
 ];
-// 玩家隨機抽走一隊作為「我隊」的剩餘隊伍中，再取 7 支作為 AI（共 8 隊同場）
 let AI_TEAMINFO=[]; // 開局決定
 const AI_NAMES=NBA_TEAMS.map(t=>t.name); // 相容舊參照
 let S=null, tab="sched", tradeSel={team:0,mine:[],theirs:[]}, marketPos="ALL";
@@ -319,61 +339,103 @@ function power(team,isMe){
 }
 
 /* ============ 建立新遊戲 ============ */
-/* 生成底薪角色球員（虛構），讓聯盟薪資結構像真實 NBA：球星＋角色球員 */
+/* 生成底薪角色球員（虛構），給擴張隊開局墊底 */
 function genRoles(n){
   const arr=[];
   for(let i=0;i<n;i++){
-    const ovr=ri(68,76);
-    arr.push({id:"g"+i,name:FN[ri(0,FN.length-1)]+" "+LN[ri(0,LN.length-1)],
-      pos:["PG","SG","SF","PF","C"][i%5],
+    const ovr=ri(65,73);
+    arr.push({id:"g"+Date.now().toString(36)+i+Math.floor(Math.random()*1e4).toString(36),
+      name:FN[ri(0,FN.length-1)]+" "+LN[ri(0,LN.length-1)],
+      pos:["PG","SG","SF","PF","C","SG","SF","PF"][i%8],
       pts:+(ovr*0.16+rnd(-1.5,1.5)).toFixed(1),reb:+rnd(2,6).toFixed(1),ast:+rnd(1,4).toFixed(1),
       stl:+rnd(0.3,1.1).toFixed(1),blk:+rnd(0.2,1).toFixed(1),fg:+rnd(43,50).toFixed(1),
-      sal:+rnd(2.2,7.5).toFixed(1),ovr,pot:0,sta:100,inj:0,yrs:ri(1,3),form:0,mv:0,mvH:[]});
+      sal:+rnd(2.0,5.5).toFixed(1),ovr,pot:0,sta:100,inj:0,yrs:ri(1,3),form:0,mv:0,mvH:[]});
   }
   return arr;
 }
+/* 從 DB 列複製一份新球員（給選秀/球星市場用，不影響真實隊陣容） */
+function clonePlayer(src){
+  const ovr=calcOvr(src);
+  return {id:"c"+Date.now().toString(36)+Math.floor(Math.random()*1e9).toString(36),
+    name:src[0],pos:src[1],pts:src[2],reb:src[3],ast:src[4],stl:src[5],blk:src[6],fg:src[7],
+    sal:src[8],team:src[9]||"",ovr,sta:100,inj:0,yrs:0,pot:0,form:0,mv:0,mvH:[]};
+}
+/* 選秀（球星市場）：每天刷新 4 次、每次 10 名真實球員，開價隨身價浮動 → 可挖便宜大咖 */
+function rollDraftOffers(){
+  const have=new Set(S.roster.map(p=>p.name));
+  const cand=DB.filter(r=>!have.has(r[0]));
+  const offers=[],used=new Set();
+  let guard=0;
+  while(offers.length<DRAFT_OFFERS&&guard++<600&&cand.length){
+    // 加權：OVR 越高越稀有（指數壓低高 OVR 機率），挖到大咖更有驚喜
+    const r=cand[Math.floor(Math.pow(Math.random(),1.7)*cand.length)];
+    if(!r||used.has(r[0]))continue;
+    used.add(r[0]);
+    const c=clonePlayer(r);initMv(c);
+    const ask=Math.max(2.0,+(c.mv*rnd(0.6,1.3)).toFixed(1)); // 開價隨身價浮動
+    c.ask=ask;c.bargain=ask<=c.mv*0.8; // 明顯低於身價 → 💎 划算
+    offers.push(c);
+  }
+  return offers.sort((a,b)=>b.ovr-a.ovr);
+}
+function draftSlotStart(t){const d=new Date(t),h=d.getHours();let s=0;for(const x of DRAFT_SLOTS)if(x<=h)s=x;return new Date(d.getFullYear(),d.getMonth(),d.getDate(),s,0,0,0).getTime();}
+function nextDraftSlot(t){const d=new Date(t);for(const x of DRAFT_SLOTS){const s=new Date(d.getFullYear(),d.getMonth(),d.getDate(),x,0,0,0).getTime();if(s>t)return s;}return new Date(d.getFullYear(),d.getMonth(),d.getDate()+1,DRAFT_SLOTS[0],0,0,0).getTime();}
+function ensureDraft(){if(!S.draftBoard||S.draftBoard.slot==null)S.draftBoard={slot:draftSlotStart(Date.now()),manualUsed:false,offers:rollDraftOffers()};}
+/* 每到 0/6/12/18 點：自動換一批新球員，並重置免費刷新 */
+function draftCatchup(){
+  if(!S)return false;
+  ensureDraft();
+  const cur=draftSlotStart(Date.now());
+  if(cur>S.draftBoard.slot){S.draftBoard.slot=cur;S.draftBoard.manualUsed=false;S.draftBoard.offers=rollDraftOffers();save();return true;}
+  return false;
+}
+function refreshDraft(){ // 每個時段 1 次免費手動刷新
+  ensureDraft();draftCatchup();
+  if(S.draftBoard.manualUsed)return toast("這個時段的免費刷新已用完，等下次自動刷新（每 6 小時：0/6/12/18 點）");
+  S.draftBoard.manualUsed=true;S.draftBoard.offers=rollDraftOffers();save();render();
+}
 function newGame(name){
-  const real=DB.map(mkPlayer);
-  const sortedReal=[...real].sort((a,b)=>b.ovr-a.ovr);
-  const picked=shuffle([...NBA_TEAMS]).slice(0,7);
-  AI_TEAMINFO=picked;
-  const ai=picked.map(t=>({name:t.name,abbr:t.abbr,c:t.c,roster:[],w:0,l:0}));
-  // 每 4 名球星留 1 名進自由市場（含頂級球星，給玩家建隊核心）
-  const faStars=sortedReal.filter((_,i)=>i%4===0);
-  const pool=[...sortedReal.filter((_,i)=>i%4!==0),...genRoles(32)].sort((a,b)=>b.ovr-a.ovr);
-  // 薪資感知分配：由強到弱，每人分給「目前薪資最低且裝得下」的隊，各 9 人
-  const left=[];
-  pool.forEach(p=>{
-    const cand=ai.filter(t=>t.roster.length<9&&payroll(t.roster)+p.sal<=CAP-4)
-                 .sort((a,b)=>payroll(a.roster)-payroll(b.roster))[0];
-    if(cand)cand.roster.push(p);else left.push(p);
+  // 30 支真實球隊：依真實 team 縮寫把球員分回各隊（維持真實陣容）
+  const byTeam={};
+  DB.forEach((arr,i)=>{const p=mkPlayer(arr,i);(byTeam[p.team]=byTeam[p.team]||[]).push(p);});
+  const ai=NBA_TEAMS.map(t=>{
+    let roster=(byTeam[t.abbr]||[]).sort((a,b)=>b.ovr-a.ovr).slice(0,MAX_R);
+    if(roster.length<MIN_R)roster=roster.concat(genRoles(MIN_R-roster.length)); // 深度不足補角色球員
+    return {name:t.name,abbr:t.abbr,c:t.c,roster,w:0,l:0};
   });
-  const fa=[...faStars,...left].sort((a,b)=>b.ovr-a.ovr);
-  S={team:name||"我的夢之隊",season:1,phase:"prep",round:0,w:0,l:0,
-     roster:[],fa,ai,starters:[],log:[],lastGame:null,champs:[],
-     po:null,draft:null,resign:null,nextAt:null,unseen:false,rookieN:0,
+  S={team:name||"我的夢之隊",abbr:"DRM",season:1,phase:"prep",round:0,w:0,l:0,
+     roster:genRoles(8),fa:[],ai,starters:[],log:[],lastGame:null,champs:[],
+     po:null,draft:null,draftBoard:null,resign:null,nextAt:null,unseen:false,rookieN:0,
      mday:dayStart(Date.now()),teamMvH:[],lastSync:0,
      myColor:"#d98e3f",gameHist:[]};
+  S.starters=autoStarters(S.roster);
+  ensureDraft();
   allPlayers().forEach(initMv);
   buildSchedule();save();render();
 }
 function buildSchedule(){
-  const ids=[0,1,2,3,4,5,6,7],base=[];
-  let arr=ids.slice(1);
-  for(let r=0;r<7;r++){
-    const rd=[[0,arr[0]]];
-    for(let k=1;k<4;k++)rd.push([arr[k],arr[arr.length-k]]);
-    base.push(rd);arr.unshift(arr.pop());
+  // 31 隊（0=我隊，1..30=真實隊）循環賽程：圓桌法，奇數補一個「輪空」位
+  const N=1+S.ai.length;
+  const teams=[];for(let i=0;i<N;i++)teams.push(i);
+  if(teams.length%2===1)teams.push(-1); // -1 = 輪空
+  const m=teams.length,half=m/2,base=[];
+  let arr=teams.slice();
+  for(let r=0;r<m-1;r++){
+    const rd=[];
+    for(let k=0;k<half;k++){const a=arr[k],b=arr[m-1-k];if(a!==-1&&b!==-1)rd.push([a,b]);}
+    base.push(rd);
+    arr.splice(1,0,arr.pop()); // 固定首位，其餘旋轉
   }
   const rev=base.map(rd=>rd.map(([a,b])=>[b,a]));
-  S.schedule=[...base,...rev,...base,...rev]; // 28 輪
+  S.schedule=[...base,...rev]; // 雙循環，足夠打滿 REG_GAMES 場
 }
 function teamOf(i){return i===0?{name:S.team,roster:S.roster,get w(){return S.w},set w(v){S.w=v},get l(){return S.l},set l(v){S.l=v}}:S.ai[i-1];}
 function addW(i){i===0?S.w++:S.ai[i-1].w++;}
 function addL(i){i===0?S.l++:S.ai[i-1].l++;}
+function winPct(w,l){return (w+l)?w/(w+l):0;}
 function standings(){
   const list=[{idx:0,name:S.team,w:S.w,l:S.l},...S.ai.map((t,i)=>({idx:i+1,name:t.name,w:t.w,l:t.l}))];
-  return list.sort((a,b)=>b.w-a.w||a.l-b.l);
+  return list.sort((a,b)=>winPct(b.w,b.l)-winPct(a.w,a.l)||b.w-a.w);
 }
 
 /* ============ 開季 ============ */
@@ -449,42 +511,60 @@ function tick(){
   if(played){S.unseen=true;save();}
   return played;
 }
+/* 其餘 29 隊互打：用戰力快速判勝負（不產生詳細數據，效能佳） */
+function quickWin(A,B){
+  const pa=power(A,false)||50,pb=power(B,false)||50;
+  let sa=0,sb=0;
+  for(let q=0;q<4;q++){sa+=Math.max(12,23+(pa-80)*0.45+rnd(-6,6));sb+=Math.max(12,23+(pb-80)*0.45+rnd(-6,6));}
+  return sa===sb?Math.random()<0.5:sa>sb;
+}
 function playRegularRound(){
-  const rd=S.schedule[S.round];
+  const rd=S.schedule[S.round%S.schedule.length];
   rd.forEach(([a,b])=>{
-    const A=teamOf(a),B=teamOf(b);
-    // 玩家陣容不合法 → 棄賽判負
-    if(a===0&&!legalMe()){addL(0);addW(b);S.log.unshift({type:"forfeit",t:Date.now(),msg:"陣容不足或超帽，本場棄賽判負 vs "+B.name});return;}
-    if(b===0&&!legalMe()){addL(0);addW(a);S.log.unshift({type:"forfeit",t:Date.now(),msg:"陣容不足或超帽，本場棄賽判負 vs "+A.name});return;}
-    const g=simGame(A,B,a===0?0:(b===0?1:-1));
-    if(g.sa>g.sb){addW(a);addL(b);}else{addW(b);addL(a);}
-    applyFatigueInjury(A,a===0,g.sa>g.sb);applyFatigueInjury(B,b===0,g.sb>g.sa);
     if(a===0||b===0){
+      const A=teamOf(a),B=teamOf(b);
+      if(a===0&&!legalMe()){addL(0);addW(b);S.log.unshift({type:"forfeit",t:Date.now(),msg:"陣容不足或超帽，本場棄賽判負 vs "+B.name});return;}
+      if(b===0&&!legalMe()){addL(0);addW(a);S.log.unshift({type:"forfeit",t:Date.now(),msg:"陣容不足或超帽，本場棄賽判負 vs "+A.name});return;}
+      const g=simGame(A,B,a===0?0:1);
+      if(g.sa>g.sb){addW(a);addL(b);}else{addW(b);addL(a);}
+      applyFatigueInjury(A,a===0,g.sa>g.sb);applyFatigueInjury(B,b===0,g.sb>g.sa);
       const me=a===0,win=me?g.sa>g.sb:g.sb>g.sa;
-      const rec={a:A.name,b:B.name,g,meA:me,when:S.nextAt,label:"例行賽 第"+(S.round+1)+"輪",win,
+      const rec={a:A.name,b:B.name,g,meA:me,when:S.nextAt,label:"例行賽 第"+(S.w+S.l+1)+"場",win,
                  my:me?g.sa:g.sb,op:me?g.sb:g.sa,opp:me?B.name:A.name};
       S.lastGame=rec;
       S.gameHist.unshift(rec);S.gameHist=S.gameHist.slice(0,40);
-      S.log.unshift({type:"game",t:S.nextAt,win,my:rec.my,op:rec.op,opp:rec.opp,label:"R"+(S.round+1)});
+      S.log.unshift({type:"game",t:S.nextAt,win,my:rec.my,op:rec.op,opp:rec.opp,label:(S.w+S.l)+"場"});
+    }else{
+      const A=teamOf(a),B=teamOf(b);
+      if(quickWin(A,B)){addW(a);addL(b);}else{addW(b);addL(a);}
     }
   });
   S.log=S.log.slice(0,30);
   S.round++;
-  if(S.round>=ROUNDS)startPlayoffs();
+  if(S.w+S.l>=REG_GAMES)startPlayoffs();
 }
 function legalMe(){return S.roster.length>=MIN_R&&payroll(S.roster)<=CAP&&healthy(S.roster).length>=5;}
 
-/* ============ 季後賽（前四種子，三戰兩勝） ============ */
+/* ============ 季後賽：前 16 強 + Play-in（系列賽三戰兩勝、Play-in 單場） ============ */
+function mkSeries(a,b,target){return{a,b,wa:0,wb:0,hist:[],target:target||2};}
+function seriesDone(s){return s.wa>=s.target||s.wb>=s.target;}
+function seriesWinner(s){return s.wa>=s.target?s.a:s.b;}
+function seriesLoser(s){return s.wa>=s.target?s.b:s.a;}
+function poRoundName(n){return ({16:"16強",8:"8強",4:"4強",2:"冠軍賽"})[n]||(n+"強");}
+function buildBracket(seeds){const n=seeds.length,s=[];for(let i=0;i<n/2;i++)s.push(mkSeries(seeds[i],seeds[n-1-i],2));return s;}
+function nextRound(winners){const s=[];for(let i=0;i<winners.length;i+=2)s.push(mkSeries(winners[i],winners[i+1],2));return s;}
 function startPlayoffs(){
   const st=standings();
-  const seeds=st.slice(0,4).map(t=>t.idx);
   S.phase="playoffs";
-  S.po={stage:"semi",seeds,series:[mkSeries(seeds[0],seeds[3]),mkSeries(seeds[1],seeds[2])],final:null};
-  S.log.unshift({type:"info",t:Date.now(),msg:"例行賽結束！季後賽四強："+st.slice(0,4).map(t=>t.name).join("、")});
+  const auto=st.slice(0,14).map(t=>t.idx);   // 1–14 種子直接晉級
+  const pi=st.slice(14,18).map(t=>t.idx);    // 15–18 種子打 Play-in 搶最後兩張門票
+  S.po={stage:"playin",auto,pi,
+    pin:{g1:mkSeries(pi[0],pi[1],1),g2:mkSeries(pi[2],pi[3],1),g3:null},
+    round:null,roundName:"Play-in"};
+  S.log.unshift({type:"info",t:Date.now(),msg:"例行賽結束！前 16 強季後賽開打（15–18 種子先打 Play-in）"});
 }
-function mkSeries(a,b){return{a,b,wa:0,wb:0,hist:[]};}
-function playSeriesGame(s){
-  if(s.wa>=2||s.wb>=2)return;
+function playSeriesGame(s,roundLabel){
+  if(seriesDone(s))return;
   const A=teamOf(s.a),B=teamOf(s.b);
   const g=simGame(A,B,s.a===0?0:(s.b===0?1:-1));
   if(g.sa>g.sb)s.wa++;else s.wb++;
@@ -492,32 +572,43 @@ function playSeriesGame(s){
   applyFatigueInjury(A,s.a===0,g.sa>g.sb);applyFatigueInjury(B,s.b===0,g.sb>g.sa);
   if(s.a===0||s.b===0){
     const me=s.a===0,win=me?g.sa>g.sb:g.sb>g.sa;
-    const lab=S.po.stage==="semi"?"季後賽 準決賽":"總冠軍賽";
-    const rec={a:A.name,b:B.name,g,meA:me,when:S.nextAt,label:lab,win,
+    const rec={a:A.name,b:B.name,g,meA:me,when:S.nextAt,label:"季後賽 "+roundLabel,win,
                my:me?g.sa:g.sb,op:me?g.sb:g.sa,opp:me?B.name:A.name};
-    S.lastGame=rec;
-    S.gameHist.unshift(rec);S.gameHist=S.gameHist.slice(0,40);
-    S.log.unshift({type:"game",t:S.nextAt,win,my:rec.my,op:rec.op,opp:rec.opp,label:S.po.stage==="semi"?"準決賽":"冠軍賽"});
+    S.lastGame=rec;S.gameHist.unshift(rec);S.gameHist=S.gameHist.slice(0,40);
+    S.log.unshift({type:"game",t:S.nextAt,win,my:rec.my,op:rec.op,opp:rec.opp,label:roundLabel});
   }
 }
 function playPlayoffSlot(){
   const po=S.po;
-  if(po.stage==="semi"){
-    po.series.forEach(playSeriesGame);
-    if(po.series.every(s=>s.wa>=2||s.wb>=2)){
-      const w1=po.series[0].wa>=2?po.series[0].a:po.series[0].b;
-      const w2=po.series[1].wa>=2?po.series[1].a:po.series[1].b;
-      po.stage="final";po.final=mkSeries(w1,w2);
-      S.log.unshift({type:"info",t:Date.now(),msg:"總冠軍賽："+teamOf(w1).name+" vs "+teamOf(w2).name});
+  if(po.stage==="playin"){
+    const pn=po.pin;
+    playSeriesGame(pn.g1,"Play-in");playSeriesGame(pn.g2,"Play-in");
+    if(!pn.g3){
+      if(seriesDone(pn.g1)&&seriesDone(pn.g2)){
+        pn.g3=mkSeries(seriesLoser(pn.g1),seriesWinner(pn.g2),1);
+        S.log.unshift({type:"info",t:Date.now(),msg:"Play-in 最終戰："+teamOf(seriesLoser(pn.g1)).name+" vs "+teamOf(seriesWinner(pn.g2)).name});
+      }
+    }else{
+      playSeriesGame(pn.g3,"Play-in");
+      if(seriesDone(pn.g3)){
+        const seeds=[...po.auto,seriesWinner(pn.g1),seriesWinner(pn.g3)];
+        po.stage="bracket";po.round=buildBracket(seeds);po.roundName=poRoundName(16);
+        S.log.unshift({type:"info",t:Date.now(),msg:"16 強對戰開始！"});
+      }
     }
-  }else if(po.stage==="final"){
-    playSeriesGame(po.final);
-    if(po.final.wa>=2||po.final.wb>=2){
-      const c=po.final.wa>=2?po.final.a:po.final.b;
+    return;
+  }
+  po.round.forEach(s=>playSeriesGame(s,po.roundName));
+  if(po.round.every(seriesDone)){
+    const winners=po.round.map(seriesWinner);
+    if(winners.length===1){
+      const c=winners[0];
       S.champs.push({season:S.season,name:teamOf(c).name,mine:c===0});
       S.log.unshift({type:"info",t:Date.now(),msg:"🏆 第 "+S.season+" 季冠軍："+teamOf(c).name+(c===0?"（就是你！）":"")});
-      startOffseason();
+      startOffseason();return;
     }
+    po.round=nextRound(winners);po.roundName=poRoundName(winners.length);
+    S.log.unshift({type:"info",t:Date.now(),msg:"晉級"+po.roundName+"！"});
   }
 }
 
@@ -531,13 +622,9 @@ function startOffseason(){
   const expMine=[];
   const dec=(r,mine)=>{r.forEach(p=>{p.yrs--;if(p.yrs<=0&&mine)expMine.push(p.id);});};
   dec(S.roster,true);S.ai.forEach(t=>dec(t.roster,false));
-  // AI 自動處理到期約：薪資夠就續，否則放走
+  // AI 真實隊一律續約到期球員，維持真實陣容完整（不受薪資帽裁員）
   S.ai.forEach(t=>{
-    t.roster.filter(p=>p.yrs<=0).forEach(p=>{
-      const ns=marketSal(p);
-      if(payroll(t.roster)-p.sal+ns<=CAP&&Math.random()<0.8){p.sal=ns;p.yrs=ri(2,3);}
-      else{t.roster.splice(t.roster.indexOf(p),1);p.sal=ns;p.yrs=0;S.fa.push(p);}
-    });
+    t.roster.filter(p=>p.yrs<=0).forEach(p=>{p.sal=marketSal(p);p.yrs=ri(2,3);});
   });
   S.resign=expMine.length?{ids:expMine}:null;
   // 選秀池
@@ -606,40 +693,33 @@ function startNewSeason(){
   if(S.draft)return toast("先完成選秀");
   if(S.roster.length<MIN_R)return toast("陣容不足 "+MIN_R+" 人，先去市場補人");
   if(payroll(S.roster)>CAP)return toast("薪資超帽，先處理陣容");
-  // AI 休賽期補強：人數不足就從市場簽人，超帽就釋出最便宜的高薪約
-  S.ai.forEach(t=>{
-    while(payroll(t.roster)>CAP&&t.roster.length>MIN_R){
-      const drop=[...t.roster].sort((a,b)=>val(a)-val(b))[0];
-      t.roster.splice(t.roster.indexOf(drop),1);S.fa.push(drop);
-    }
-    while(t.roster.length<9){
-      const p=[...S.fa].sort((a,b)=>val(b)-val(a)).find(p=>payroll(t.roster)+p.sal<=CAP);
-      if(!p)break;
-      S.fa.splice(S.fa.indexOf(p),1);p.yrs=Math.max(p.yrs,2);t.roster.push(p);
-    }
-    // 空間夠就追簽最強的自由球員，維持聯盟競爭強度
-    while(t.roster.length<MAX_R&&payroll(t.roster)<CAP-45){
-      const p=[...S.fa].sort((a,b)=>b.ovr-a.ovr).find(p=>payroll(t.roster)+p.sal<=CAP);
-      if(!p||p.ovr<78)break;
-      S.fa.splice(S.fa.indexOf(p),1);p.yrs=Math.max(p.yrs,2);t.roster.push(p);
-    }
-  });
+  // AI 真實隊只補足深度（不足就補角色球員），不做超帽裁員，維持真實陣容
+  S.ai.forEach(t=>{if(t.roster.length<MIN_R)t.roster=t.roster.concat(genRoles(MIN_R-t.roster.length));});
   S.fa.sort((a,b)=>b.ovr-a.ovr);
   S.season++;S.round=0;S.w=0;S.l=0;S.ai.forEach(t=>{t.w=0;t.l=0;});
   S.starters=autoStarters(S.roster);
   buildSchedule();S.phase="regular";S.nextAt=nextSlot(Date.now());
+  S.draftBoard={slot:draftSlotStart(Date.now()),manualUsed:false,offers:rollDraftOffers()};
   save();render();toast("第 "+S.season+" 季開打！");
 }
 
 /* ============ 簽約 / 釋出 / 交易 ============ */
 function sign(id){
   if(S.phase==="playoffs")return toast("季後賽期間禁止簽約");
-  const i=S.fa.findIndex(p=>p.id===id);const p=S.fa[i];
-  if(S.roster.length>=MAX_R)return toast("名單已滿 13 人");
-  if(payroll(S.roster)+p.sal>CAP)return toast("超過薪資帽 $"+CAP+"M");
-  const after=CAP-payroll(S.roster)-p.sal, need=MIN_R-(S.roster.length+1);
-  if(need>0&&after<need*2.5)return toast("簽下他之後，剩餘空間將湊不滿 "+MIN_R+" 人最低陣容");
-  p.yrs=Math.max(p.yrs,2);S.fa.splice(i,1);S.roster.push(p);save();render();toast("已簽下 "+p.name);
+  // 先找選秀開價球員（用開價簽），再找自由球員
+  let p=null,from=null,oi=-1;
+  if(S.draftBoard){oi=S.draftBoard.offers.findIndex(x=>x.id===id);if(oi>=0){p=S.draftBoard.offers[oi];from="draft";}}
+  if(!p){oi=S.fa.findIndex(x=>x.id===id);if(oi>=0){p=S.fa[oi];from="fa";}}
+  if(!p)return;
+  if(S.roster.some(x=>x.name===p.name))return toast("你已經有 "+p.name+" 了");
+  const price=from==="draft"?(p.ask||p.sal):p.sal;
+  if(S.roster.length>=MAX_R)return toast("名單已滿 "+MAX_R+" 人");
+  if(payroll(S.roster)+price>CAP)return toast("超過薪資帽 $"+CAP+"M（剩餘 $"+(CAP-payroll(S.roster)).toFixed(1)+"M）");
+  p.sal=price;p.yrs=Math.max(p.yrs||0,2);delete p.ask;delete p.bargain;
+  if(from==="draft")S.draftBoard.offers.splice(oi,1);else S.fa.splice(oi,1);
+  S.roster.push(p);initMv(p);
+  if(!S.starters||S.starters.length<5)S.starters=autoStarters(S.roster);
+  save();render();toast("已簽下 "+p.name+"（$"+price+"M）");
 }
 function release(id){
   const i=S.roster.findIndex(p=>p.id===id);const p=S.roster[i];
@@ -654,12 +734,11 @@ function evalTrade(){
   if(!mine.length||!theirs.length)return{ok:false,msg:"雙方都要選至少 1 名球員"};
   const myNew=S.roster.length-mine.length+theirs.length;
   const aiNew=t.roster.length-theirs.length+mine.length;
-  if(myNew<MIN_R||myNew>MAX_R)return{ok:false,msg:"交易後你的名單須維持 8–13 人"};
-  if(aiNew<MIN_R||aiNew>MAX_R)return{ok:false,msg:"交易後對方名單須維持 8–13 人"};
+  if(myNew<MIN_R||myNew>MAX_R)return{ok:false,msg:"交易後你的名單須維持 "+MIN_R+"–"+MAX_R+" 人"};
+  if(aiNew<MIN_R||aiNew>MAX_R)return{ok:false,msg:"交易後對方名單須維持 "+MIN_R+"–"+MAX_R+" 人"};
+  // 只有玩家受薪資帽限制；真實隊可超帽（符合真實 NBA 的鳥權等規則）
   const myPay=payroll(S.roster)-payroll(mine)+payroll(theirs);
   if(myPay>CAP)return{ok:false,msg:"交易後你將超過薪資帽（$"+myPay.toFixed(1)+"M）"};
-  const aiPay=payroll(t.roster)-payroll(theirs)+payroll(mine);
-  if(aiPay>CAP)return{ok:false,msg:"交易後對方將超過薪資帽"};
   const gain=mine.reduce((s,p)=>s+val(p),0)-theirs.reduce((s,p)=>s+val(p),0);
   const need=-theirs.reduce((s,p)=>s+val(p),0)*0.04;
   return{ok:true,accept:gain>=need,gain};
@@ -683,9 +762,13 @@ function proposeTrade(){
 async function save(){try{await window.storage.set("nba_gm_idle",JSON.stringify(S));}catch(e){}}
 async function load(){try{const r=await window.storage.get("nba_gm_idle");if(r&&r.value)S=JSON.parse(r.value);}catch(e){S=null;}
   if(S){ // 舊版存檔遷移
+    // 重大改版：舊存檔（非 30 隊聯盟結構）不相容，視為新檔避免崩潰
+    if(!S.ai||S.ai.length!==NBA_TEAMS.length){S=null;return;}
     if(S.lastSync==null)S.lastSync=0;
     if(!S.gameHist)S.gameHist=[];
     if(!S.myColor)S.myColor="#d98e3f";
+    if(!S.draftBoard||S.draftBoard.slot==null)S.draftBoard=null;
+    ensureDraft();
     // 球隊縮寫遷移：舊存檔的球員物件沒有 team 欄位，依姓名從 DB 回填
     const _tm={};DB.forEach(r=>{_tm[r[0]]=r[9]||"";});
     const _fix=p=>{if(p&&!p.team&&_tm[p.name])p.team=_tm[p.name];};
@@ -768,7 +851,7 @@ function fmtT(ms){const d=new Date(ms);return (d.getMonth()+1)+"/"+d.getDate()+"
 function renderHeader(){
   if(!S){$("#hSeason").textContent="未開始";$("#hSub").innerHTML="打造你的 NBA 夢之隊";$("#capFill").style.width="0%";return;}
   $("#hTitle").innerHTML=`${S.team} <span class="dot">GM</span>`;
-  const ph={prep:"組隊中",regular:`例行賽 ${S.round}/${ROUNDS}`,playoffs:"季後賽",offseason:"休賽期"}[S.phase];
+  const ph={prep:"組隊中",regular:`例行賽 ${S.w+S.l}/${REG_GAMES}`,playoffs:"季後賽",offseason:"休賽期"}[S.phase];
   $("#hSeason").textContent=`第 ${S.season} 季・${ph}`;
   const pay=payroll(S.roster);
   $("#hSub").innerHTML=`戰績 <b style="color:var(--ink)">${S.w}勝${S.l}敗</b> <span>薪資 <b style="color:${pay>CAP?"var(--bad)":"var(--led)"}">$${pay.toFixed(1)}M</b> / $${CAP}M</span> <span>陣容 ${S.roster.length}/${MAX_R}</span>`;
@@ -840,21 +923,37 @@ function vTeam(){
   h+=`<button class="btn ghost block" data-act="reset">🗑 刪除存檔重新開始</button>`;
   return h;
 }
-/* --- 自由市場 --- */
+/* --- 選秀・球星市場（每 6 小時自動刷新、每段 1 次免費手動刷新，可挖便宜大咖） --- */
 function vMarket(){
+  ensureDraft();draftCatchup();
   const room=(CAP-payroll(S.roster)).toFixed(1);
   const poss=["ALL","PG","SG","SF","PF","C"];
-  const list=S.fa.filter(p=>marketPos==="ALL"||p.pos===marketPos);
-  const canSync=Date.now()-(S.lastSync||0)>=20*3600*1000;
-  return `<h2>自由市場 <span class="tag">剩餘空間 $${room}M${S.phase==="playoffs"?"・季後賽鎖定":""}</span></h2>
-  <div class="card flex">
-    <div style="flex:1"><b style="font-size:13px">📡 真實行情</b><div class="muted" style="font-size:11px">AI 搜尋最近一週 NBA 真實表現，反映到球員身價（每天一次）</div></div>
-    <button class="btn sm ${canSync?"":"ghost"}" ${syncing?"disabled":""} data-act="sync">${syncing?"搜尋中…":canSync?"同步":"明天再來"}</button>
-  </div>
-  <div class="flex" style="margin-bottom:10px;gap:6px;overflow-x:auto">
-    ${poss.map(p=>`<button class="btn sm ${marketPos===p?"":"ghost"}" data-act="mpos" data-arg="${p}">${p==="ALL"?"全部":p}</button>`).join("")}
-  </div>
-  <div class="card" style="padding:2px 4px">${list.length?list.map(p=>pRow(p,`<button class="btn sm" ${S.phase==="playoffs"?"disabled":""} data-act="sign" data-id="${p.id}">簽下</button>`)).join(""):'<div class="empty">這個位置沒有自由球員了</div>'}</div>`;
+  const free=!S.draftBoard.manualUsed;
+  const nextT=nextDraftSlot(Date.now());
+  const lock=S.phase==="playoffs";
+  const offers=S.draftBoard.offers.filter(p=>marketPos==="ALL"||p.pos===marketPos);
+  const offerRow=p=>`<div class="p-row" data-pid="${p.id}">
+    <div class="ovr ${ovrCls(p.ovr)}">${p.ovr}<small>OVR</small></div>
+    <div class="p-info">
+      <div class="p-name">${p.name} ${p.bargain?'<span style="color:var(--led);font-weight:700">💎划算</span>':''}</div>
+      <div class="p-meta">${p.team?'<span style="color:var(--blue);font-weight:600">'+p.team+'</span> ':''}${p.pos}・${p.pts}分 ${p.reb}板 ${p.ast}助・身價 $${(p.mv||0).toFixed(1)}M</div>
+    </div>
+    <div class="p-sal" style="color:${p.bargain?'var(--led)':'var(--ink)'}">$${(p.ask||p.sal).toFixed(1)}M<small>開價</small></div>
+    <button class="btn sm" ${lock?'disabled':''} data-act="sign" data-id="${p.id}">簽下</button>
+  </div>`;
+  let h=`<h2>選秀・球星市場 <span class="tag">剩餘空間 $${room}M${lock?'・季後賽鎖定':''}</span></h2>`;
+  h+=`<div class="card flex">
+    <div style="flex:1"><b style="font-size:13px">🔄 下次自動刷新 <span id="draftcd">${fmtT(nextT)}</span></b><div class="muted" style="font-size:11px">每 6 小時（0/6/12/18 點）自動換一批 ${DRAFT_OFFERS} 人，每段有 1 次免費手動刷新。開價隨身價浮動，💎=跳樓價！</div></div>
+    <button class="btn sm ${free?'':'ghost'}" ${free?'':'disabled'} data-act="rolldraft">${free?'免費刷新':'已用完'}</button>
+  </div>`;
+  h+=`<div class="flex" style="margin-bottom:10px;gap:6px;overflow-x:auto">${poss.map(p=>`<button class="btn sm ${marketPos===p?'':'ghost'}" data-act="mpos" data-arg="${p}">${p==="ALL"?'全部':p}</button>`).join("")}</div>`;
+  h+=`<div class="card" style="padding:2px 4px">${offers.length?offers.map(offerRow).join(""):'<div class="empty">這個位置沒有球員，換個位置或刷新看看</div>'}</div>`;
+  const fa=S.fa.filter(p=>marketPos==="ALL"||p.pos===marketPos);
+  if(fa.length){
+    h+=`<h2 style="margin-top:14px">自由球員 <span class="tag">直接簽，年薪固定</span></h2>`;
+    h+=`<div class="card" style="padding:2px 4px">${fa.map(p=>pRow(p,`<button class="btn sm" ${lock?'disabled':''} data-act="sign" data-id="${p.id}">簽下</button>`)).join("")}</div>`;
+  }
+  return h;
 }
 /* --- 交易 --- */
 function togSel(side,id){
@@ -926,12 +1025,13 @@ function vSched(){
       return `<span class="${t<now?"done":""}"></span>`;
     }).join("");
     let nextDesc="";
-    if(S.phase==="regular"&&S.round<ROUNDS){
-      const my=S.schedule[S.round].find(([a,b])=>a===0||b===0);
-      const op=teamOf(my[0]===0?my[1]:my[0]);
-      nextDesc=`第 ${S.round+1} 輪 vs ${op.name}（戰力 ${power(op,false).toFixed(0)}）`;
+    if(S.phase==="regular"){
+      const rd=S.schedule[S.round%S.schedule.length]||[];
+      const my=rd.find(([a,b])=>a===0||b===0);
+      if(my){const op=teamOf(my[0]===0?my[1]:my[0]);nextDesc=`第 ${S.w+S.l+1} 場 vs ${op.name}（戰力 ${power(op,false).toFixed(0)}）`;}
+      else nextDesc="輪休日（本輪沒有你的比賽）";
     }else if(S.phase==="playoffs"){
-      nextDesc=S.po.stage==="semi"?"季後賽・準決賽":"總冠軍賽";
+      nextDesc="季後賽・"+(S.po.stage==="playin"?"Play-in":(S.po.roundName||""));
     }
     h+=`<div class="scoreboard">
       <div class="sb-name" style="text-align:center;margin-bottom:6px">下一場 ${fmtT(S.nextAt)}・${nextDesc}</div>
@@ -1003,13 +1103,18 @@ function showBoxscore(idx){
 /* --- 聯盟 --- */
 function vLeague(){
   const st=standings();
-  let h=`<h2>戰績榜 <span class="tag">第 ${S.season} 季・前四名進季後賽</span></h2><div class="card" style="padding:4px 8px">`;
-  st.forEach((t,i)=>{h+=`<div class="standing-row"><span class="rk">${i+1}</span><span class="nm ${t.idx===0?"me":""}">${i<4?"🔸":""}${t.name}</span><span class="wl">${t.w}勝 ${t.l}敗</span></div>`;});
-  h+=`</div>`;
+  let h=`<h2>戰績榜 <span class="tag">第 ${S.season} 季・前 16 名進季後賽</span></h2><div class="card" style="padding:4px 8px">`;
+  st.forEach((t,i)=>{const mark=i<14?"🔸":i<18?"🟡":"";h+=`<div class="standing-row"><span class="rk">${i+1}</span><span class="nm ${t.idx===0?"me":""}">${mark}${t.name}</span><span class="wl">${t.w}勝 ${t.l}敗</span></div>`;});
+  h+=`</div><p class="muted" style="font-size:11px;margin-top:4px">🔸 直接晉級（1–14）　🟡 Play-in（15–18 搶最後兩張門票）</p>`;
   if(S.po){
-    h+=`<h2 style="margin-top:14px">季後賽（三戰兩勝）</h2><div class="card bracket">`;
-    S.po.series.forEach(s=>{h+=`<div class="vs"><span class="nm" style="flex:1">${teamOf(s.a).name} vs ${teamOf(s.b).name}</span><b>${s.wa} - ${s.wb}</b></div>`;});
-    if(S.po.final){const s=S.po.final;h+=`<div class="vs" style="color:var(--led)"><span class="nm" style="flex:1">🏆 ${teamOf(s.a).name} vs ${teamOf(s.b).name}</span><b>${s.wa} - ${s.wb}</b></div>`;}
+    h+=`<h2 style="margin-top:14px">季後賽（系列賽三戰兩勝）</h2><div class="card bracket">`;
+    if(S.po.stage==="playin"){
+      const pn=S.po.pin,line=(s,lab)=>s?`<div class="vs"><span class="nm" style="flex:1">${lab} ${teamOf(s.a).name} vs ${teamOf(s.b).name}</span><b>${s.wa}-${s.wb}</b></div>`:"";
+      h+=`<div class="muted" style="font-size:11px;margin-bottom:4px">Play-in</div>`+line(pn.g1,"①")+line(pn.g2,"②")+line(pn.g3,"決");
+    }else if(S.po.round){
+      h+=`<div class="muted" style="font-size:11px;margin-bottom:4px">${S.po.roundName}</div>`;
+      S.po.round.forEach(s=>{h+=`<div class="vs ${s.a===0||s.b===0?'':''}" style="${s.a===0||s.b===0?'color:var(--led)':''}"><span class="nm" style="flex:1">${teamOf(s.a).name} vs ${teamOf(s.b).name}</span><b>${s.wa} - ${s.wb}</b></div>`;});
+    }
     h+=`</div>`;
   }
   if(S.champs.length){
@@ -1063,6 +1168,7 @@ document.addEventListener("click",e=>{
     case "release":release(id);break;
     case "sign":sign(id);break;
     case "mpos":marketPos=arg;render();break;
+    case "rolldraft":refreshDraft();break;
     case "sync":syncReal();break;
     case "tsel":togSel(el.dataset.side,id);break;
     case "trade":proposeTrade();break;
@@ -1103,7 +1209,7 @@ async function loadPlayersFromAPI(){
 (async()=>{
   const api=await loadPlayersFromAPI();
   await load();
-  if(S){marketCatchup();tick();}
+  if(S){marketCatchup();draftCatchup();tick();}
   render();
   // 在標題列下方顯示資料來源狀態
   const src=document.getElementById("dataSrc");
@@ -1113,7 +1219,8 @@ async function loadPlayersFromAPI(){
   }
   setInterval(()=>{ // 每秒更新倒數；到點就補算（含每日行情）
     if(!S)return;
-    if(marketCatchup()){render();return;}
+    if(marketCatchup()){draftCatchup();render();return;}
+    if(draftCatchup()){if(tab==="market")render();}
     if(S.nextAt&&Date.now()>=S.nextAt){tick();render();return;}
     const el=document.getElementById("cd");
     if(el&&S.nextAt){

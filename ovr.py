@@ -7,8 +7,7 @@ ovr.py — 球員評分（OVR）與薪資反推
 
 
 def calc_ovr(pts, reb, ast, stl, blk, fg):
-    """把場均數據換算成 68–99 的綜合評分。
-    與前端 calcOvr 同公式：基底 38，各項加權。"""
+    """舊版：把場均換算成 68–99。保留作為前端後備與相容用途。"""
     v = (38
          + pts * 1.05
          + reb * 0.82
@@ -17,6 +16,33 @@ def calc_ovr(pts, reb, ast, stl, blk, fg):
          + blk * 1.7
          + (fg - 44) * 0.28)
     return max(68, min(99, round(v)))
+
+
+def composite_score(pts, reb, ast, stl, blk, fg, pie=None):
+    """綜合影響力分數：場均加權 + PIE（球員影響力估計）。
+    這個分數只用來『排名』，OVR 由 ovr_from_rank 依排名換算，所以絕對數值不重要。
+    PIE 能反映防守/組織/整體影響，修正純場均低估明星的問題。"""
+    box = (pts * 1.0
+           + reb * 0.7
+           + ast * 1.0
+           + stl * 2.0
+           + blk * 1.8
+           + (fg - 44) * 0.2)
+    if pie is not None:
+        # PIE 可能是 0.20（比例）或 20.0（百分比），統一成百分比尺度
+        pie_pct = pie * 100 if pie < 1.5 else pie
+        return box + pie_pct * 1.6
+    return box
+
+
+def ovr_from_rank(rank, n):
+    """依『綜合分數排名』把球員映射到 58–99 的 OVR 曲線（rank 0 = 最強）。
+    指數 < 1 讓頂端拉開：超巨 96–99、全明星 90–95、先發 80–88、輪替 72–80、板凳 58–71。"""
+    if n <= 1:
+        return 99
+    pct = rank / (n - 1)          # 0（最強）→ 1（最弱）
+    ovr = 99 - 41 * (pct ** 0.65)
+    return max(58, min(99, round(ovr)))
 
 
 def estimate_salary(ovr):

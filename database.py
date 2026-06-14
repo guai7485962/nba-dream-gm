@@ -30,6 +30,7 @@ def init_db():
             pos         TEXT,
             pts         REAL, reb REAL, ast REAL,
             stl         REAL, blk REAL, fg  REAL,
+            pie         REAL,
             ovr         INTEGER,
             salary      REAL,
             updated_at  TEXT
@@ -45,6 +46,10 @@ def init_db():
             snapshot_at TEXT
         )
     """)
+    # 相容舊資料庫：缺 pie 欄位就補上（不必刪檔重建）
+    cols = [r[1] for r in c.execute("PRAGMA table_info(players)").fetchall()]
+    if "pie" not in cols:
+        c.execute("ALTER TABLE players ADD COLUMN pie REAL")
     conn.commit()
     conn.close()
 
@@ -55,12 +60,12 @@ def upsert_player(p):
     c = conn.cursor()
     now = datetime.now().isoformat(timespec="seconds")
     c.execute("""
-        INSERT INTO players (player_id,name,team,pos,pts,reb,ast,stl,blk,fg,ovr,salary,updated_at)
-        VALUES (:player_id,:name,:team,:pos,:pts,:reb,:ast,:stl,:blk,:fg,:ovr,:salary,:now)
+        INSERT INTO players (player_id,name,team,pos,pts,reb,ast,stl,blk,fg,pie,ovr,salary,updated_at)
+        VALUES (:player_id,:name,:team,:pos,:pts,:reb,:ast,:stl,:blk,:fg,:pie,:ovr,:salary,:now)
         ON CONFLICT(player_id) DO UPDATE SET
             name=:name, team=:team, pos=:pos,
             pts=:pts, reb=:reb, ast=:ast, stl=:stl, blk=:blk, fg=:fg,
-            ovr=:ovr, salary=:salary, updated_at=:now
+            pie=:pie, ovr=:ovr, salary=:salary, updated_at=:now
     """, {**p, "now": now})
     c.execute("""
         INSERT INTO player_history (player_id,name,pts,reb,ast,stl,blk,fg,ovr,salary,snapshot_at)

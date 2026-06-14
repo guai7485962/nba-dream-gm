@@ -20,7 +20,7 @@ import unicodedata
 from datetime import datetime
 
 import database as db
-from ovr import calc_ovr, estimate_salary
+from ovr import calc_ovr, estimate_salary, composite_score, ovr_from_rank
 
 REQUEST_DELAY = 0.6
 MIN_GAMES = 5      # 涵蓋深度陣容（深板凳球員場次少，OVR 自然偏低當角色球員）
@@ -74,6 +74,28 @@ def fetch_league_averages(season):
 
     time.sleep(REQUEST_DELAY)
     return rows
+
+
+def fetch_pie(season):
+    """抓進階數據裡的 PIE（球員影響力估計），回傳 {player_id: pie}。失敗回空 dict。"""
+    try:
+        from nba_api.stats.endpoints import leaguedashplayerstats
+        print("  正在取得進階數據（PIE 影響力）……")
+        resp = leaguedashplayerstats.LeagueDashPlayerStats(
+            season=season,
+            season_type_all_star="Regular Season",
+            per_mode_detailed="PerGame",
+            measure_type_detailed_defense="Advanced",
+            timeout=30,
+        )
+        rows = resp.get_normalized_dict()["LeagueDashPlayerStats"]
+        time.sleep(REQUEST_DELAY)
+        pie = {r["PLAYER_ID"]: r.get("PIE", 0) for r in rows}
+        print(f"  取得 {len(pie)} 名球員的 PIE ✓")
+        return pie
+    except Exception as e:
+        print(f"  ⚠ PIE 抓取失敗：{e}（改用純場均排名）")
+        return {}
 
 
 # ─── 2. 球員位置（PlayerIndex 真實位置）────────────────────────────
@@ -278,6 +300,7 @@ def main():
     print(f"取得 {len(rows)} 名球員原始資料")
 
     pos_map = fetch_positions_playerindex(args.season)
+    pie_map = fetch_pie(args.season)
 
     sal_map = {}
     if args.real_salary:
@@ -285,10 +308,9 @@ def main():
         if not sal_map:
             print("  薪資抓取失敗，改用 OVR 反推")
 
-    # ── 計算 OVR、位置、薪資 ──
-    print("開始計算 OVR 與薪資……")
-    processed = []
-    real_sal_count = 0
+    # ── 第一輪：算出每位球員的綜合影響力分數（場均 + PIE）──
+    print("開始計算影響力分數、OVR 與薪資……")
+    entries = []
     for r in rows:
         if r.get("GP", 0) < MIN_GAMES:
             continue
@@ -298,31 +320,35 @@ def main():
         stl = round(r.get("STL", 0), 1)
         blk = round(r.get("BLK", 0), 1)
         fg  = round(r.get("FG_PCT", 0) * 100, 1)
-        ovr = calc_ovr(pts, reb, ast, stl, blk, fg)
-
         pid  = r["PLAYER_ID"]
-        pos  = resolve_position(pid, pos_map, r)
-
-        real_sal = lookup_salary(r["PLAYER_NAME"], sal_map)
-        if real_sal is not None:
-            salary = real_sal
-            real_sal_count += 1
-        else:
-            salary = estimate_salary(ovr)
-
-        processed.append({
+        pie  = pie_map.get(pid)
+        entries.append({
             "player_id": pid,
             "name":   r["PLAYER_NAME"],
             "team":   r.get("TEAM_ABBREVIATION", ""),
-            "pos":    pos,
+            "pos":    resolve_position(pid, pos_map, r),
             "pts": pts, "reb": reb, "ast": ast,
             "stl": stl, "blk": blk, "fg":  fg,
-            "ovr":    ovr,
-            "salary": salary,
+            "pie": round((pie * 100 if (pie is not None and pie < 1.5) else (pie or 0)), 1),
+            "_score": composite_score(pts, reb, ast, stl, blk, fg, pie),
         })
 
-    processed.sort(key=lambda p: p["ovr"], reverse=True)
-    processed = processed[:args.top]
+    # ── 第二輪：依分數排名換算 OVR（曲線），取前 N 名 ──
+    entries.sort(key=lambda e: e["_score"], reverse=True)
+    entries = entries[:args.top]
+    n = len(entries)
+    real_sal_count = 0
+    for i, e in enumerate(entries):
+        e["ovr"] = ovr_from_rank(i, n)
+        real_sal = lookup_salary(e["name"], sal_map)
+        if real_sal is not None:
+            e["salary"] = real_sal
+            real_sal_count += 1
+        else:
+            e["salary"] = estimate_salary(e["ovr"])
+        del e["_score"]
+
+    processed = entries
 
     for p in processed:
         db.upsert_player(p)

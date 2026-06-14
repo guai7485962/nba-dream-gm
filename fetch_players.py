@@ -366,6 +366,7 @@ def main():
 
     processed = entries
 
+    db.clear_players()  # 先清空舊資料，只留本次的 450 名，避免過時球員殘留
     for p in processed:
         db.upsert_player(p)
 

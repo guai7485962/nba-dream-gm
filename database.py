@@ -75,6 +75,14 @@ def upsert_player(p):
     conn.close()
 
 
+def clear_players():
+    """清空 players 資料表（保留 player_history 快照），避免舊球員累積殘留。"""
+    conn = get_conn()
+    conn.execute("DELETE FROM players")
+    conn.commit()
+    conn.close()
+
+
 def get_all_players():
     """回傳所有球員（依 OVR 由高到低），給 API 用。"""
     conn = get_conn()

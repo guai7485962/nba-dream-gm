@@ -168,8 +168,24 @@ def _normalize_pos(pos_raw):
     return mapping.get(pos_raw.upper(), None)
 
 
+# 手動位置修正：NBA 官方常把「組織前鋒」等球員列成 F/G-F，數據也難推回真正位置。
+# 這份清單對知名球員強制指定位置（依姓名，含去變音符號比對）。可自行增補。
+POSITION_OVERRIDE = {
+    "Luka Doncic": "PG",
+    "LeBron James": "SF",
+    "Ben Simmons": "PG",
+    "Josh Giddey": "PG",
+    "Nikola Jokic": "C",
+    "Giannis Antetokounmpo": "PF",
+}
+
+
 def resolve_position(pid, pos_map, row):
-    """合併 PlayerIndex 位置 + 場上數據，得出最終 5 位置之一。"""
+    """合併 手動修正 + PlayerIndex 位置 + 場上數據，得出最終 5 位置之一。"""
+    name_plain = _strip_accents((row.get("PLAYER_NAME") or "").lower())
+    for k, v in POSITION_OVERRIDE.items():
+        if _strip_accents(k.lower()) == name_plain:
+            return v
     base = pos_map.get(pid)
 
     if base is None:

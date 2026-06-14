@@ -368,14 +368,19 @@ function rollDraftOffers(){
   const cand=DB.filter(r=>!have.has(r[0]));
   const offers=[],used=new Set();
   let guard=0;
-  while(offers.length<DRAFT_OFFERS&&guard++<600&&cand.length){
-    // 加權：OVR 越高越稀有（指數壓低高 OVR 機率），挖到大咖更有驚喜
-    const r=cand[Math.floor(Math.pow(Math.random(),1.7)*cand.length)];
+  // cand 依 OVR 由高到低排序（DB 已排序）。指數<1 讓抽樣偏向「索引大＝OVR 低」，
+  // 所以大咖（索引小）變稀有。數字越小、大咖越罕見（0.7 約等於偶爾出現一個球星）。
+  const STAR_BIAS=0.7;
+  while(offers.length<DRAFT_OFFERS&&guard++<800&&cand.length){
+    const r=cand[Math.floor(Math.pow(Math.random(),STAR_BIAS)*cand.length)];
     if(!r||used.has(r[0]))continue;
     used.add(r[0]);
     const c=clonePlayer(r);initMv(c);
-    const ask=Math.max(2.0,+(c.mv*rnd(0.6,1.3)).toFixed(1)); // 開價隨身價浮動
-    c.ask=ask;c.bargain=ask<=c.mv*0.8; // 明顯低於身價 → 💎 划算
+    // 開價隨身價浮動；OVR 越高，最低折扣越小 → 球星很少跳樓價，撿便宜集中在中低端
+    const o=c.ovr;
+    const lowMul=o>=90?0.95:o>=85?0.88:o>=80?0.78:0.6;
+    const ask=Math.max(2.0,+(c.mv*rnd(lowMul,1.25)).toFixed(1));
+    c.ask=ask;c.bargain=ask<=c.mv*0.8; // 明顯低於身價 → 💎 划算（球星幾乎不會觸發）
     offers.push(c);
   }
   return offers.sort((a,b)=>b.ovr-a.ovr);

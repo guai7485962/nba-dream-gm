@@ -259,7 +259,9 @@ const NBA_TEAMS=[
 ];
 let AI_TEAMINFO=[]; // 開局決定
 const AI_NAMES=NBA_TEAMS.map(t=>t.name); // 相容舊參照
-let S=null, tab="sched", tradeSel={team:0,mine:[],theirs:[]}, marketPos="ALL";
+let S=null, tab="sched", tradeSel={team:0,mine:[],theirs:[]}, marketPos="ALL", teamPos="ALL";
+const POSITIONS=["PG","SG","SF","PF","C"];
+function posCount(roster){const c={PG:0,SG:0,SF:0,PF:0,C:0};(roster||[]).forEach(p=>{if(c[p.pos]!=null)c[p.pos]++;});return c;}
 
 const rnd=(a,b)=>a+Math.random()*(b-a);
 const ri=(a,b)=>Math.floor(rnd(a,b+1));
@@ -926,7 +928,16 @@ function vTeam(){
   }
   if(S.phase==="prep")h+=`<div class="card" style="border-color:var(--maple)"><b style="color:var(--led)">組隊階段</b><p class="muted">簽滿 ${MIN_R} 人後按下方「開季」，之後每天自動打 4 場。</p><button class="btn block" data-act="startseason">🏀 開季！啟動賽程時鐘</button></div>`;
   if(!r.length)h+=`<div class="card empty">還沒有球員。<br>到「市場」分頁簽下你的第一批球員吧！</div>`;
-  else h+=`<div class="card" style="padding:2px 4px">`+r.map(p=>`<div class="${(S.starters||[]).includes(p.id)?"starter":""}" data-act="starter" data-id="${p.id}">${pRow(p,`<button class="btn sm danger" data-act="release" data-id="${p.id}">釋出</button>`,true)}</div>`).join("")+`</div>`;
+  else{
+    // 位置分類篩選（按鈕帶各位置人數）
+    const cnt=posCount(S.roster);
+    h+=`<div class="flex" style="margin:2px 0 10px;gap:6px;overflow-x:auto">`
+      +`<button class="btn sm ${teamPos==="ALL"?"":"ghost"}" data-act="tpos" data-arg="ALL">全部 ${S.roster.length}</button>`
+      +POSITIONS.map(p=>`<button class="btn sm ${teamPos===p?"":"ghost"}" data-act="tpos" data-arg="${p}">${p} ${cnt[p]}</button>`).join("")
+      +`</div>`;
+    const list=teamPos==="ALL"?r:r.filter(p=>p.pos===teamPos);
+    h+=`<div class="card" style="padding:2px 4px">`+(list.length?list.map(p=>`<div class="${(S.starters||[]).includes(p.id)?"starter":""}" data-act="starter" data-id="${p.id}">${pRow(p,`<button class="btn sm danger" data-act="release" data-id="${p.id}">釋出</button>`,true)}</div>`).join(""):`<div class="empty">這個位置沒有球員</div>`)+`</div>`;
+  }
   h+=`<p class="muted">綠框 = 先發五人。沒排滿時系統會自動以最佳狀態球員補位。先發消耗較多體力（-15／場，替補 -8），體力每 6 小時回 12，低體力會降低實際戰力——記得輪休！</p>`;
   h+=`<button class="btn ghost block" data-act="reset">🗑 刪除存檔重新開始</button>`;
   return h;
@@ -954,6 +965,10 @@ function vMarket(){
     <div style="flex:1"><b style="font-size:13px">🔄 下次自動刷新 <span id="draftcd">${fmtT(nextT)}</span></b><div class="muted" style="font-size:11px">每 6 小時（0/6/12/18 點）自動換一批 ${DRAFT_OFFERS} 人，每段有 1 次免費手動刷新。開價隨身價浮動，💎=跳樓價！</div></div>
     <button class="btn sm ${free?'':'ghost'}" ${free?'':'disabled'} data-act="rolldraft">${free?'免費刷新':'已用完'}</button>
   </div>`;
+  // 我目前各位置人數（缺位置時標紅，提醒補強）
+  const myc=posCount(S.roster);
+  h+=`<div class="card" style="padding:8px 10px"><div class="muted" style="font-size:11px;margin-bottom:5px">我的陣容各位置（共 ${S.roster.length}/${MAX_R} 人）</div>
+    <div class="flex" style="gap:12px;flex-wrap:wrap">${POSITIONS.map(p=>{const n=myc[p],thin=n===0;return `<span style="font-size:14px;font-weight:700">${p} <span style="color:${thin?'var(--bad)':'var(--led)'}">${n}</span></span>`;}).join("")}</div></div>`;
   h+=`<div class="flex" style="margin-bottom:10px;gap:6px;overflow-x:auto">${poss.map(p=>`<button class="btn sm ${marketPos===p?'':'ghost'}" data-act="mpos" data-arg="${p}">${p==="ALL"?'全部':p}</button>`).join("")}</div>`;
   h+=`<div class="card" style="padding:2px 4px">${offers.length?offers.map(offerRow).join(""):'<div class="empty">這個位置沒有球員，換個位置或刷新看看</div>'}</div>`;
   const fa=S.fa.filter(p=>marketPos==="ALL"||p.pos===marketPos);
@@ -1176,6 +1191,7 @@ document.addEventListener("click",e=>{
     case "release":release(id);break;
     case "sign":sign(id);break;
     case "mpos":marketPos=arg;render();break;
+    case "tpos":teamPos=arg;render();break;
     case "rolldraft":refreshDraft();break;
     case "sync":syncReal();break;
     case "tsel":togSel(el.dataset.side,id);break;

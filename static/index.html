@@ -376,11 +376,13 @@ function rollDraftOffers(){
     if(!r||used.has(r[0]))continue;
     used.add(r[0]);
     const c=clonePlayer(r);initMv(c);
-    // 開價隨身價浮動；OVR 越高，最低折扣越小 → 球星很少跳樓價，撿便宜集中在中低端
+    // 開價：平常接近身價；但有一個隨 OVR 遞減的小機率觸發「跳樓價」(<0.8)→ 💎
     const o=c.ovr;
-    const lowMul=o>=90?0.95:o>=85?0.88:o>=80?0.78:0.6;
-    const ask=Math.max(2.0,+(c.mv*rnd(lowMul,1.25)).toFixed(1));
-    c.ask=ask;c.bargain=ask<=c.mv*0.8; // 明顯低於身價 → 💎 划算（球星幾乎不會觸發）
+    const bChance=o>=90?0.05:o>=80?0.12:o>=72?0.30:0.45; // 90+ 只有 5%、80+ 12%，越低越常見
+    let ask;
+    if(Math.random()<bChance) ask=Math.max(2.0,+(c.mv*rnd(0.55,0.78)).toFixed(1)); // 跳樓價
+    else                      ask=Math.max(2.0,+(c.mv*rnd(0.9,1.25)).toFixed(1));  // 一般開價
+    c.ask=ask;c.bargain=ask<=c.mv*0.8; // 明顯低於身價 → 💎 划算
     offers.push(c);
   }
   return offers.sort((a,b)=>b.ovr-a.ovr);
@@ -788,9 +790,9 @@ async function load(){try{const r=await window.storage.get("nba_gm_idle");if(r&&
     if(!S.draftBoard||S.draftBoard.slot==null)S.draftBoard=null;
     ensureDraft();
     if(S.po&&!S.po.history)S.po.history=[]; // 相容：季後賽中途存檔補上對戰樹歷史
-    // 依姓名從 DB 回填：球隊縮寫 + 新版 OVR（讓舊存檔球員套用新評分曲線）
-    const _tm={},_ov={};DB.forEach(r=>{_tm[r[0]]=r[9]||"";if(r[10]!=null)_ov[r[0]]=r[10];});
-    const _fix=p=>{if(!p)return;if(!p.team&&_tm[p.name])p.team=_tm[p.name];if(_ov[p.name]!=null)p.ovr=_ov[p.name];};
+    // 依姓名從 DB 回填：球隊縮寫 + 位置 + 新版 OVR（讓舊存檔球員套用新資料）
+    const _tm={},_ov={},_ps={};DB.forEach(r=>{_tm[r[0]]=r[9]||"";if(r[10]!=null)_ov[r[0]]=r[10];if(r[1])_ps[r[0]]=r[1];});
+    const _fix=p=>{if(!p)return;if(!p.team&&_tm[p.name])p.team=_tm[p.name];if(_ov[p.name]!=null)p.ovr=_ov[p.name];if(_ps[p.name])p.pos=_ps[p.name];};
     allPlayers().forEach(_fix);
     if(S.draft&&S.draft.pool)S.draft.pool.forEach(_fix);
     allPlayers().forEach(initMv);

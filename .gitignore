@@ -1,4 +1,4 @@
-players.db
+# players.db 保留在 repo 當備用（API 失敗時用）
 dist/
 __pycache__/
 *.pyc

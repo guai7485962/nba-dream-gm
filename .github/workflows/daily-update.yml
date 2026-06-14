@@ -21,8 +21,16 @@ jobs:
       - name: 安裝套件
         run: pip install -r requirements.txt
 
-      - name: 抓取 NBA 球員數據（含真實薪資）
-        run: python fetch_players.py --real-salary
+      - name: 抓取 NBA 球員數據（含真實薪資，失敗自動重試）
+        run: |
+          for i in 1 2 3; do
+            echo "嘗試第 $i 次..."
+            python fetch_players.py --real-salary && break
+            echo "失敗，等待 30 秒後重試..."
+            sleep 30
+          done
+          # 即使全部重試失敗，也繼續用備用 players.db 建置
+          exit 0
 
       - name: 建置靜態 PWA
         run: python build_static.py

@@ -177,6 +177,7 @@ POSITION_OVERRIDE = {
     "Josh Giddey": "PG",
     "Nikola Jokic": "C",
     "Giannis Antetokounmpo": "PF",
+    "Zion Williamson": "PF",
 }
 
 

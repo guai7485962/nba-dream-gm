@@ -505,6 +505,8 @@ function tick(){
     recoverAll();
     if(S.phase==="regular")playRegularRound();
     else if(S.phase==="playoffs")playPlayoffSlot();
+    // 玩家出局（沒進季後賽或被淘汰）→ 立即快轉跑完季後賽、產生冠軍、進休賽期
+    if(S.phase==="playoffs"&&S.po&&S.po.meOut){let g=0;while(S.phase==="playoffs"&&g++<800)playPlayoffSlot();}
     if(S.nextAt)S.nextAt=nextSlot(S.nextAt);
     played=true;
   }
@@ -558,10 +560,12 @@ function startPlayoffs(){
   S.phase="playoffs";
   const auto=st.slice(0,14).map(t=>t.idx);   // 1–14 種子直接晉級
   const pi=st.slice(14,18).map(t=>t.idx);    // 15–18 種子打 Play-in 搶最後兩張門票
+  const meOut=!auto.includes(0)&&!pi.includes(0); // 連 Play-in 都沒擠進 → 直接出局
   S.po={stage:"playin",auto,pi,
     pin:{g1:mkSeries(pi[0],pi[1],1),g2:mkSeries(pi[2],pi[3],1),g3:null},
-    round:null,roundName:"Play-in"};
-  S.log.unshift({type:"info",t:Date.now(),msg:"例行賽結束！前 16 強季後賽開打（15–18 種子先打 Play-in）"});
+    round:null,roundName:"Play-in",meOut};
+  if(meOut)S.log.unshift({type:"info",t:Date.now(),msg:"本季無緣季後賽（戰績排不進前 16），快轉至冠軍出爐後重整旗鼓"});
+  else S.log.unshift({type:"info",t:Date.now(),msg:"例行賽結束！前 16 強季後賽開打（15–18 種子先打 Play-in）"});
 }
 function playSeriesGame(s,roundLabel){
   if(seriesDone(s))return;
@@ -580,9 +584,11 @@ function playSeriesGame(s,roundLabel){
 }
 function playPlayoffSlot(){
   const po=S.po;
+  const lostMe=s=>s&&seriesDone(s)&&seriesLoser(s)===0;
   if(po.stage==="playin"){
     const pn=po.pin;
     playSeriesGame(pn.g1,"Play-in");playSeriesGame(pn.g2,"Play-in");
+    if(lostMe(pn.g2))po.meOut=true; // 輸 g2 直接淘汰（輸 g1 還能打 g3）
     if(!pn.g3){
       if(seriesDone(pn.g1)&&seriesDone(pn.g2)){
         pn.g3=mkSeries(seriesLoser(pn.g1),seriesWinner(pn.g2),1);
@@ -590,6 +596,7 @@ function playPlayoffSlot(){
       }
     }else{
       playSeriesGame(pn.g3,"Play-in");
+      if(lostMe(pn.g3))po.meOut=true;
       if(seriesDone(pn.g3)){
         const seeds=[...po.auto,seriesWinner(pn.g1),seriesWinner(pn.g3)];
         po.stage="bracket";po.round=buildBracket(seeds);po.roundName=poRoundName(16);
@@ -599,6 +606,7 @@ function playPlayoffSlot(){
     return;
   }
   po.round.forEach(s=>playSeriesGame(s,po.roundName));
+  po.round.forEach(s=>{if(lostMe(s))po.meOut=true;}); // 玩家本輪被淘汰
   if(po.round.every(seriesDone)){
     const winners=po.round.map(seriesWinner);
     if(winners.length===1){

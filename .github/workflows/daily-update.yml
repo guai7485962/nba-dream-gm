@@ -3,6 +3,8 @@ name: 每日更新 NBA 球員數據並部署
 on:
   schedule:
     - cron: '0 15 * * *'   # 每天台灣時間 23:00 自動執行
+  push:
+    branches: [ main ]       # 每次 push 到 main 就自動重建部署
   workflow_dispatch:         # 也可以在 GitHub 網頁手動觸發
 
 jobs:

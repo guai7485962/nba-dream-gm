@@ -17,13 +17,23 @@ import argparse
 import time
 import sys
 import unicodedata
+from datetime import datetime
 
 import database as db
 from ovr import calc_ovr, estimate_salary
 
 REQUEST_DELAY = 0.6
-SEASON = "2024-25"
 MIN_GAMES = 20
+
+
+def current_season():
+    """自動回傳目前 NBA 球季字串（NBA 球季 10 月開打、跨年）。例：2025-26"""
+    now = datetime.now()
+    start = now.year if now.month >= 10 else now.year - 1
+    return f"{start}-{str(start + 1)[-2:]}"
+
+
+SEASON = current_season()
 
 
 # ─── 1. 球員場均數據 ────────────────────────────────────────────────
@@ -36,15 +46,26 @@ def fetch_league_averages(season):
         print("✗ 找不到 nba_api 套件。請先執行： pip install -r requirements.txt")
         sys.exit(1)
 
-    print(f"正在抓取 {season} 球季的聯盟球員數據……（首次可能要幾秒）")
-    try:
+    def _fetch(s):
+        print(f"正在抓取 {s} 球季的聯盟球員數據……（首次可能要幾秒）")
         resp = leaguedashplayerstats.LeagueDashPlayerStats(
-            season=season,
+            season=s,
             season_type_all_star="Regular Season",
             per_mode_detailed="PerGame",
             timeout=30,
         )
-        rows = resp.get_normalized_dict()["LeagueDashPlayerStats"]
+        return resp.get_normalized_dict()["LeagueDashPlayerStats"]
+
+    try:
+        rows = _fetch(season)
+        # 新球季剛開打、達標人數太少 → 自動退回上一季（資料較完整）
+        enough = sum(1 for r in rows if r.get("GP", 0) >= MIN_GAMES)
+        if enough < 100:
+            start = int(season[:4])
+            prev = f"{start - 1}-{str(start)[-2:]}"
+            print(f"  {season} 球季樣本不足（僅 {enough} 人達 {MIN_GAMES} 場），改抓 {prev}")
+            time.sleep(REQUEST_DELAY)
+            rows = _fetch(prev)
     except Exception as e:
         print(f"✗ 抓取失敗：{e}")
         print("  可能原因：沒有網路、NBA 伺服器暫時拒絕、或球季字串不對。稍後再試。")

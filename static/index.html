@@ -686,6 +686,11 @@ async function load(){try{const r=await window.storage.get("nba_gm_idle");if(r&&
     if(S.lastSync==null)S.lastSync=0;
     if(!S.gameHist)S.gameHist=[];
     if(!S.myColor)S.myColor="#d98e3f";
+    // 球隊縮寫遷移：舊存檔的球員物件沒有 team 欄位，依姓名從 DB 回填
+    const _tm={};DB.forEach(r=>{_tm[r[0]]=r[9]||"";});
+    const _fix=p=>{if(p&&!p.team&&_tm[p.name])p.team=_tm[p.name];};
+    allPlayers().forEach(_fix);
+    if(S.draft&&S.draft.pool)S.draft.pool.forEach(_fix);
     allPlayers().forEach(initMv);
     if(S.draft&&S.draft.pool)S.draft.pool.forEach(initMv);
   }

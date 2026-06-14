@@ -556,6 +556,7 @@ function legalMe(){return S.roster.length>=MIN_R&&payroll(S.roster)<=CAP&&health
 
 /* ============ 季後賽：前 16 強 + Play-in（系列賽三戰兩勝、Play-in 單場） ============ */
 function mkSeries(a,b,target){return{a,b,wa:0,wb:0,hist:[],target:target||2};}
+function snapSeries(s){return{a:s.a,b:s.b,wa:s.wa,wb:s.wb,target:s.target};}
 function seriesDone(s){return s.wa>=s.target||s.wb>=s.target;}
 function seriesWinner(s){return s.wa>=s.target?s.a:s.b;}
 function seriesLoser(s){return s.wa>=s.target?s.b:s.a;}
@@ -570,7 +571,7 @@ function startPlayoffs(){
   const meOut=!auto.includes(0)&&!pi.includes(0); // 連 Play-in 都沒擠進 → 直接出局
   S.po={stage:"playin",auto,pi,
     pin:{g1:mkSeries(pi[0],pi[1],1),g2:mkSeries(pi[2],pi[3],1),g3:null},
-    round:null,roundName:"Play-in",meOut};
+    round:null,roundName:"Play-in",meOut,history:[]};
   if(meOut)S.log.unshift({type:"info",t:Date.now(),msg:"本季無緣季後賽（戰績排不進前 16），快轉至冠軍出爐後重整旗鼓"});
   else S.log.unshift({type:"info",t:Date.now(),msg:"例行賽結束！前 16 強季後賽開打（15–18 種子先打 Play-in）"});
 }
@@ -605,6 +606,7 @@ function playPlayoffSlot(){
       playSeriesGame(pn.g3,"Play-in");
       if(lostMe(pn.g3))po.meOut=true;
       if(seriesDone(pn.g3)){
+        po.history.push({name:"Play-in",series:[snapSeries(pn.g1),snapSeries(pn.g2),snapSeries(pn.g3)]});
         const seeds=[...po.auto,seriesWinner(pn.g1),seriesWinner(pn.g3)];
         po.stage="bracket";po.round=buildBracket(seeds);po.roundName=poRoundName(16);
         S.log.unshift({type:"info",t:Date.now(),msg:"16 強對戰開始！"});
@@ -615,6 +617,7 @@ function playPlayoffSlot(){
   po.round.forEach(s=>playSeriesGame(s,po.roundName));
   po.round.forEach(s=>{if(lostMe(s))po.meOut=true;}); // 玩家本輪被淘汰
   if(po.round.every(seriesDone)){
+    po.history.push({name:po.roundName,series:po.round.map(snapSeries)});
     const winners=po.round.map(seriesWinner);
     if(winners.length===1){
       const c=winners[0];
@@ -784,6 +787,7 @@ async function load(){try{const r=await window.storage.get("nba_gm_idle");if(r&&
     if(!S.myColor)S.myColor="#d98e3f";
     if(!S.draftBoard||S.draftBoard.slot==null)S.draftBoard=null;
     ensureDraft();
+    if(S.po&&!S.po.history)S.po.history=[]; // 相容：季後賽中途存檔補上對戰樹歷史
     // 依姓名從 DB 回填：球隊縮寫 + 新版 OVR（讓舊存檔球員套用新評分曲線）
     const _tm={},_ov={};DB.forEach(r=>{_tm[r[0]]=r[9]||"";if(r[10]!=null)_ov[r[0]]=r[10];});
     const _fix=p=>{if(!p)return;if(!p.team&&_tm[p.name])p.team=_tm[p.name];if(_ov[p.name]!=null)p.ovr=_ov[p.name];};
@@ -1131,17 +1135,27 @@ function showBoxscore(idx){
 /* --- 聯盟 --- */
 function vLeague(){
   const st=standings();
-  let h=`<h2>戰績榜 <span class="tag">第 ${S.season} 季・前 16 名進季後賽</span></h2><div class="card" style="padding:4px 8px">`;
+  // 賽制說明（常駐）
+  let h=`<div class="card" style="border-color:var(--maple)"><b style="color:var(--led);font-size:13px">🏆 季後賽賽制</b>
+    <div class="muted" style="font-size:11px;line-height:1.75;margin-top:5px">
+    例行賽 58 場依<b style="color:var(--ink)">勝率</b>排名。<b style="color:var(--ink)">第 1–14 名直接晉級</b>；<b style="color:var(--ink)">第 15–18 名打 Play-in</b>（單場）搶最後 2 席：15 vs 16 贏者晉級、17 vs 18 輸者淘汰、再由兩場的敗方與勝方對決搶最後一席。之後 <b style="color:var(--ink)">16 強 → 8 強 → 4 強 → 冠軍賽</b>，每輪皆系列賽<b style="color:var(--ink)">三戰兩勝</b>逐輪淘汰，直到產生總冠軍。你若沒進前 16 或中途被淘汰，會自動快轉到冠軍出爐。</div></div>`;
+  h+=`<h2 style="margin-top:14px">戰績榜 <span class="tag">第 ${S.season} 季</span></h2><div class="card" style="padding:4px 8px">`;
   st.forEach((t,i)=>{const mark=i<14?"🔸":i<18?"🟡":"";h+=`<div class="standing-row"><span class="rk">${i+1}</span><span class="nm ${t.idx===0?"me":""}">${mark}${t.name}</span><span class="wl">${t.w}勝 ${t.l}敗</span></div>`;});
-  h+=`</div><p class="muted" style="font-size:11px;margin-top:4px">🔸 直接晉級（1–14）　🟡 Play-in（15–18 搶最後兩張門票）</p>`;
+  h+=`</div><p class="muted" style="font-size:11px;margin-top:4px">🔸 直接晉級（1–14）　🟡 Play-in（15–18）</p>`;
   if(S.po){
-    h+=`<h2 style="margin-top:14px">季後賽（系列賽三戰兩勝）</h2><div class="card bracket">`;
+    // 一場系列賽的顯示：含種子隊名、戰績、勝方標示、我隊★高亮
+    const ser=s=>{
+      const done=(s.wa>=s.target||s.wb>=s.target),aw=s.wa>s.wb,bw=s.wb>s.wa;
+      const nm=(idx,winSide)=>{const me=idx===0;const sty=me?'color:var(--led);font-weight:800':(done?(winSide?'color:var(--ink);font-weight:700':'color:var(--dim)'):'');return `<span style="flex:1;min-width:0;${sty}">${me?'★ ':''}${teamOf(idx).name}</span>`;};
+      return `<div class="vs">${nm(s.a,aw)}<b style="margin:0 6px;white-space:nowrap">${s.wa} - ${s.wb}</b>${nm(s.b,bw)}${done?'':'<span class="muted" style="font-size:10px;margin-left:4px;white-space:nowrap">進行中</span>'}</div>`;
+    };
+    const roundBlock=(name,series)=>`<div style="margin-bottom:12px"><div class="muted" style="font-size:11px;font-weight:700;color:var(--led);margin-bottom:4px">${name}</div>${series.map(ser).join("")}</div>`;
+    h+=`<h2 style="margin-top:14px">季後賽對戰樹 <span class="tag">三戰兩勝</span></h2><div class="card bracket">`;
+    (S.po.history||[]).forEach(r=>{h+=roundBlock(r.name,r.series);});
     if(S.po.stage==="playin"){
-      const pn=S.po.pin,line=(s,lab)=>s?`<div class="vs"><span class="nm" style="flex:1">${lab} ${teamOf(s.a).name} vs ${teamOf(s.b).name}</span><b>${s.wa}-${s.wb}</b></div>`:"";
-      h+=`<div class="muted" style="font-size:11px;margin-bottom:4px">Play-in</div>`+line(pn.g1,"①")+line(pn.g2,"②")+line(pn.g3,"決");
+      h+=roundBlock("Play-in（進行中）",[S.po.pin.g1,S.po.pin.g2,S.po.pin.g3].filter(Boolean));
     }else if(S.po.round){
-      h+=`<div class="muted" style="font-size:11px;margin-bottom:4px">${S.po.roundName}</div>`;
-      S.po.round.forEach(s=>{h+=`<div class="vs ${s.a===0||s.b===0?'':''}" style="${s.a===0||s.b===0?'color:var(--led)':''}"><span class="nm" style="flex:1">${teamOf(s.a).name} vs ${teamOf(s.b).name}</span><b>${s.wa} - ${s.wb}</b></div>`;});
+      h+=roundBlock(S.po.roundName+"（進行中）",S.po.round);
     }
     h+=`</div>`;
   }

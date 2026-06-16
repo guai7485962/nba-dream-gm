@@ -23,7 +23,8 @@ import database as db
 from ovr import calc_ovr, estimate_salary, composite_score, ovr_from_rank
 
 REQUEST_DELAY = 0.6
-MIN_GAMES = 5      # 涵蓋深度陣容（深板凳球員場次少，OVR 自然偏低當角色球員）
+MIN_GAMES = 15     # 至少 15 場，濾掉小樣本（避免深板凳因效率虛高而被高估）
+MIN_MPG = 10       # 每場至少 10 分鐘，排除只打 garbage time 的球員
 DEFAULT_TOP = 450  # 30 隊 × 約 15 人，讓每隊有真實深度
 
 
@@ -329,7 +330,7 @@ def main():
     print("開始計算影響力分數、OVR 與薪資……")
     entries = []
     for r in rows:
-        if r.get("GP", 0) < MIN_GAMES:
+        if r.get("GP", 0) < MIN_GAMES or r.get("MIN", 0) < MIN_MPG:
             continue
         pts = round(r.get("PTS", 0), 1)
         reb = round(r.get("REB", 0), 1)

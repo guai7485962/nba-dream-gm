@@ -22,16 +22,18 @@ def composite_score(pts, reb, ast, stl, blk, fg, pie=None):
     """綜合影響力分數：場均加權 + PIE（球員影響力估計）。
     這個分數只用來『排名』，OVR 由 ovr_from_rank 依排名換算，所以絕對數值不重要。
     PIE 能反映防守/組織/整體影響，修正純場均低估明星的問題。"""
+    # 命中率加分綁「得分量」：低出手量的高命中率不該灌分（避免深板凳刷效率）
+    fg_bonus = (fg - 44) * 0.2 * min(1.0, pts / 12.0)
     box = (pts * 1.0
            + reb * 0.7
            + ast * 1.0
            + stl * 2.0
            + blk * 1.8
-           + (fg - 44) * 0.2)
+           + fg_bonus)
     if pie is not None:
         # PIE 可能是 0.20（比例）或 20.0（百分比），統一成百分比尺度
         pie_pct = pie * 100 if pie < 1.5 else pie
-        return box + pie_pct * 1.6
+        return box + pie_pct * 1.2  # PIE 權重略降，讓實際產量更主導
     return box
 
 

@@ -361,13 +361,19 @@ function lineupOf(team,isMe){
   const bench=healthy(r).filter(p=>!ids.has(p.id)).sort((a,b)=>eff(b)-eff(a)).slice(0,5);
   return{st,bench};
 }
+// (B) 非線性才能值：高 OVR 的每一分更值錢，巨星貢獻被放大
+function gameVal(p){const e=eff(p);return e+Math.pow(Math.max(0,e-84),1.4)*0.18;}
 function power(team,isMe){
   const{st,bench}=lineupOf(team,isMe);
   if(st.length<5)return 0; // 可上場人數不足
   let w=0,n=0;
-  st.forEach(p=>{w+=eff(p)*1.45;n+=1.45;});
-  bench.forEach((p,i)=>{const k=[1.0,0.88,0.74,0.6,0.45][i];w+=eff(p)*k;n+=k;});
-  return w/n;
+  st.forEach(p=>{w+=gameVal(p)*1.45;n+=1.45;});
+  bench.forEach((p,i)=>{const k=[1.0,0.88,0.74,0.6,0.45][i];w+=gameVal(p)*k;n+=k;});
+  let pw=w/n;
+  // (A) 明星 carry 加成：全隊最強先發越強，整隊額外受益（一個超巨能扛起球隊）
+  const bestEff=Math.max.apply(null,st.map(eff));
+  pw+=Math.max(0,bestEff-90)*0.5;
+  return pw;
 }
 
 /* ============ 建立新遊戲 ============ */

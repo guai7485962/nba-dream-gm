@@ -377,6 +377,13 @@ def main():
     for p in processed:
         db.upsert_player(p)
 
+    # 另外輸出 players.json：給 build_static 用（不依賴 sqlite，Cloudflare 才建得起來）
+    import os as _os, json as _json
+    _jpath = _os.path.join(_os.path.dirname(_os.path.abspath(__file__)), "players.json")
+    with open(_jpath, "w", encoding="utf-8") as _f:
+        _json.dump(processed, _f, ensure_ascii=False)
+    print(f"  已輸出 players.json（{len(processed)} 名，給靜態建置用）")
+
     # ── 摘要 ──
     print(f"\n✓ 完成！已寫入 {len(processed)} 名球員到資料庫。")
     if args.real_salary:

@@ -39,6 +39,6 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add players.db
+          git add players.db players.json
           git diff --cached --quiet || git commit -m "weekly: 更新球員數據"
           git push

@@ -2,7 +2,6 @@
 build_static.py — 產生靜態部署版本（可裝到手機的 PWA）
 執行：python build_static.py → 輸出 dist/（index.html, manifest.json, sw.js, icons）
 """
-import sqlite3
 import os
 import json
 import re
@@ -12,17 +11,17 @@ from datetime import datetime, timezone, timedelta
 
 TW = timezone(timedelta(hours=8))  # 台灣時間（CI 環境多為 UTC，固定換算成 +8）
 BASE = os.path.dirname(os.path.abspath(__file__))
-DB_PATH = os.path.join(BASE, "players.db")
+JSON_PATH = os.path.join(BASE, "players.json")
 HTML_IN = os.path.join(BASE, "static", "index.html")
 DIST = os.path.join(BASE, "dist")
 
 
 def read_players():
-    conn = sqlite3.connect(DB_PATH)
-    conn.row_factory = sqlite3.Row
-    rows = conn.execute("SELECT * FROM players ORDER BY ovr DESC").fetchall()
-    conn.close()
-    return [dict(r) for r in rows]
+    # 讀 players.json（不依賴 sqlite，Cloudflare 等精簡 Python 環境也能建置）
+    with open(JSON_PATH, encoding="utf-8") as f:
+        rows = json.load(f)
+    rows.sort(key=lambda r: -(r.get("ovr") or 0))
+    return rows
 
 
 def format_db_js(players):
@@ -130,8 +129,8 @@ def main():
     version = now.strftime("%Y%m%d%H%M")
     build_date = now.strftime("%Y-%m-%d %H:%M")
     print(f"NBA 夢之隊 GM — 建置版本 {version}")
-    if not os.path.exists(DB_PATH):
-        print("找不到 players.db！請先執行 python fetch_players.py")
+    if not os.path.exists(JSON_PATH):
+        print("找不到 players.json！請先執行 python fetch_players.py")
         return
     os.makedirs(DIST, exist_ok=True)
     players = read_players()

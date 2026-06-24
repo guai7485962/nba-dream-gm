@@ -583,7 +583,7 @@ function startSeasonClock(){
 }
 // ⚠ 測試用：每場間隔秒數。設 0 = 正式版（每天 02/08/14/20 點）。設 300 = 每 5 分鐘一場。
 // 想更快可設更小（例如 10 = 每 10 秒一場，約幾分鐘就能打進季後賽）。上線前記得改回 0！
-const TEST_SLOT_SEC=10;
+const TEST_SLOT_SEC=0;
 function nextSlot(t){
   if(TEST_SLOT_SEC>0)return t+TEST_SLOT_SEC*1000;
   const d=new Date(t);

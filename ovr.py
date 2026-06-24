@@ -37,6 +37,16 @@ def composite_score(pts, reb, ast, stl, blk, fg, pie=None):
     return box
 
 
+def defense_rating(def_rating, blk, stl):
+    """把 DEF_RATING（球隊在場防守效率，越低越好）+ 阻攻/抄截，換算成 0–99 的個人防守力。
+    DEF_RATING 受球隊影響、較吵雜，所以混入 阻攻(護框)、抄截(外線干擾) 增加個人色彩。"""
+    base = 50.0
+    if def_rating:
+        base += (114.0 - def_rating) * 2.2   # 114 約聯盟平均；低於平均 → 加分
+    base += blk * 5.0 + stl * 4.0
+    return max(20, min(99, round(base)))
+
+
 def ovr_from_rank(rank, n):
     """依『綜合分數排名』把球員映射到 58–99 的 OVR 曲線（rank 0 = 最強）。
     指數 < 1 讓頂端拉開：超巨 96–99、全明星 90–95、先發 80–88、輪替 72–80、板凳 58–71。"""

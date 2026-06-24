@@ -1,0 +1,6 @@
+name = "nba-dream-gm"
+compatibility_date = "2026-06-17"
+
+# 純靜態網站：把 build_static.py 產生的 dist/ 當作網站內容部署，不需要 Worker 程式碼。
+[assets]
+directory = "./dist"

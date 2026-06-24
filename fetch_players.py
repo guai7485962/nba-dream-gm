@@ -20,7 +20,7 @@ import unicodedata
 from datetime import datetime
 
 import database as db
-from ovr import calc_ovr, estimate_salary, composite_score, ovr_from_rank
+from ovr import calc_ovr, estimate_salary, composite_score, ovr_from_rank, defense_rating
 
 REQUEST_DELAY = 0.6
 MIN_GAMES = 15     # 至少 15 場，濾掉小樣本（避免深板凳因效率虛高而被高估）
@@ -77,11 +77,12 @@ def fetch_league_averages(season):
     return rows
 
 
-def fetch_pie(season):
-    """抓進階數據裡的 PIE（球員影響力估計），回傳 {player_id: pie}。失敗回空 dict。"""
+def fetch_advanced(season):
+    """抓進階數據裡的 PIE（影響力）與 DEF_RATING（防守效率），
+    回傳 {player_id: {"pie": pie, "dr": def_rating}}。失敗回空 dict。"""
     try:
         from nba_api.stats.endpoints import leaguedashplayerstats
-        print("  正在取得進階數據（PIE 影響力）……")
+        print("  正在取得進階數據（PIE 影響力 + DEF_RATING 防守）……")
         resp = leaguedashplayerstats.LeagueDashPlayerStats(
             season=season,
             season_type_all_star="Regular Season",
@@ -91,11 +92,11 @@ def fetch_pie(season):
         )
         rows = resp.get_normalized_dict()["LeagueDashPlayerStats"]
         time.sleep(REQUEST_DELAY)
-        pie = {r["PLAYER_ID"]: r.get("PIE", 0) for r in rows}
-        print(f"  取得 {len(pie)} 名球員的 PIE ✓")
-        return pie
+        adv = {r["PLAYER_ID"]: {"pie": r.get("PIE", 0), "dr": r.get("DEF_RATING", 0)} for r in rows}
+        print(f"  取得 {len(adv)} 名球員的進階數據 ✓")
+        return adv
     except Exception as e:
-        print(f"  ⚠ PIE 抓取失敗：{e}（改用純場均排名）")
+        print(f"  ⚠ 進階數據抓取失敗：{e}（改用純場均排名、防守用抄阻估算）")
         return {}
 
 
@@ -318,7 +319,7 @@ def main():
     print(f"取得 {len(rows)} 名球員原始資料")
 
     pos_map = fetch_positions_playerindex(args.season)
-    pie_map = fetch_pie(args.season)
+    adv_map = fetch_advanced(args.season)
 
     sal_map = {}
     if args.real_salary:
@@ -339,7 +340,9 @@ def main():
         blk = round(r.get("BLK", 0), 1)
         fg  = round(r.get("FG_PCT", 0) * 100, 1)
         pid  = r["PLAYER_ID"]
-        pie  = pie_map.get(pid)
+        adv  = adv_map.get(pid) or {}
+        pie  = adv.get("pie")
+        dr   = adv.get("dr") or 0
         entries.append({
             "player_id": pid,
             "name":   r["PLAYER_NAME"],
@@ -348,6 +351,8 @@ def main():
             "pts": pts, "reb": reb, "ast": ast,
             "stl": stl, "blk": blk, "fg":  fg,
             "pie": round((pie * 100 if (pie is not None and pie < 1.5) else (pie or 0)), 1),
+            "def_rating": round(dr, 1),
+            "def_rtg": defense_rating(dr, blk, stl),
             "_score": composite_score(pts, reb, ast, stl, blk, fg, pie),
         })
 
@@ -380,7 +385,11 @@ def main():
     print(f"  最強前 5 名：")
     for p in processed[:5]:
         print(f"    {p['name']:24s} {p['team']:4s} {p['pos']:2s}  "
-              f"OVR {p['ovr']}  ${p['salary']}M")
+              f"OVR {p['ovr']}  防守{p['def_rtg']}  ${p['salary']}M")
+    print(f"  防守力前 5 名：")
+    for p in sorted(processed, key=lambda x: -x["def_rtg"])[:5]:
+        print(f"    {p['name']:24s} {p['team']:4s} {p['pos']:2s}  "
+              f"防守{p['def_rtg']}  (DEF_RATING {p['def_rating']}, 阻{p['blk']} 抄{p['stl']})")
     print(f"  資料庫位置：{db.DB_PATH}")
     print(f"  現在可以啟動伺服器： python server.py")
 

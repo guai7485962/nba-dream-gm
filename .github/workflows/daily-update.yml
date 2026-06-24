@@ -1,16 +1,18 @@
-name: 每日更新 NBA 球員數據並部署
+name: 每週更新 NBA 球員數據
 
+# 只負責「抓資料 → 把 players.db commit 回 repo」。
+# 部署交給 Cloudflare Pages：它監看 repo，任何 push（包含這個 workflow 的資料更新）都會自動 build + deploy。
 on:
   schedule:
-    - cron: '0 15 * * 1'   # 每週一台灣時間 23:00 自動更新（省 Netlify 點數）
-  push:
-    branches: [ main ]       # 每次 push 到 main 就自動重建部署
-  workflow_dispatch:         # 也可以在 GitHub 網頁手動觸發
+    - cron: '0 15 * * 1'   # 每週一台灣時間 23:00 自動更新
+  workflow_dispatch:         # 也可在 GitHub 網頁手動觸發
+
+permissions:
+  contents: write            # 允許把更新後的 players.db 推回 repo
 
 jobs:
-  update-and-deploy:
+  update-data:
     runs-on: ubuntu-latest
-
     steps:
       - name: 取得程式碼
         uses: actions/checkout@v4
@@ -31,16 +33,12 @@ jobs:
             echo "失敗，等待 30 秒後重試..."
             sleep 30
           done
-          # 即使全部重試失敗，也繼續用備用 players.db 建置
           exit 0
 
-      - name: 建置靜態 PWA
-        run: python build_static.py
-
-      - name: 部署到 Netlify
-        uses: netlify/actions/cli@master
-        with:
-          args: deploy --dir=dist --prod
-        env:
-          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
-          NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
+      - name: 提交更新後的 players.db（觸發 Cloudflare 自動部署）
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add players.db
+          git diff --cached --quiet || git commit -m "weekly: 更新球員數據"
+          git push

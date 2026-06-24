@@ -351,7 +351,7 @@ function healthy(r){return r.filter(p=>p.inj<=0);}
 function eff(p){return (p.ovr+(p.form||0)*0.6)*(0.72+0.28*Math.max(0,p.sta)/100);}
 
 /* ============ 先發與戰力 ============ */
-function autoStarters(r){return healthy(r).sort((a,b)=>eff(b)-eff(a)).slice(0,5).map(p=>p.id);}
+function autoStarters(r){return healthy(r).sort((a,b)=>b.ovr-a.ovr).slice(0,5).map(p=>p.id);} // 純 OVR 取前 5
 function lineupOf(team,isMe){
   const r=team.roster;
   let st=isMe?(S.starters||[]).map(id=>r.find(p=>p.id===id)).filter(p=>p&&p.inj<=0):[];
@@ -599,17 +599,12 @@ function nextSlot(t){
 /* ============ 逐球模擬引擎（玩家比賽用，AI 比賽用快速版） ============ */
 const THREE_P={PG:0.40,SG:0.42,SF:0.36,PF:0.26,C:0.12};
 function wpick(ws){let s=0;for(const w of ws)s+=w;if(s<=0)return 0;let r=Math.random()*s;for(let i=0;i<ws.length;i++){r-=ws[i];if(r<=0)return i;}return ws.length-1;}
-// 防守對位：以「位置距離最小」貪婪配對（中鋒優先守中鋒、後衛守後衛），回傳 [{off,def}]
+// 防守對位（預設）：雙方先發各依「位置順序」排好，依序對位 → C對C、F對F、G對G。之後玩家可手動互換
 function matchupPairs(offSt,defSt){
-  const pairs=[],oD=new Set(),dD=new Set(),n=Math.min(offSt.length,defSt.length);
-  while(pairs.length<n){
-    let bo=-1,bd=-1,best=99;
-    for(let oi=0;oi<offSt.length;oi++){if(oD.has(oi))continue;
-      for(let di=0;di<defSt.length;di++){if(dD.has(di))continue;
-        const d=Math.abs((POS_NUM[offSt[oi].pos]||3)-(POS_NUM[defSt[di].pos]||3));
-        if(d<best){best=d;bo=oi;bd=di;}}}
-    if(bo<0)break;pairs.push({off:offSt[bo],def:defSt[bd]});oD.add(bo);dD.add(bd);
-  }
+  const o=[...offSt].sort((a,b)=>(POS_NUM[a.pos]||3)-(POS_NUM[b.pos]||3));
+  const d=[...defSt].sort((a,b)=>(POS_NUM[a.pos]||3)-(POS_NUM[b.pos]||3));
+  const n=Math.min(o.length,d.length),pairs=[];
+  for(let i=0;i<n;i++)pairs.push({off:o[i],def:d[i]});
   return pairs;
 }
 // O 進攻 → 每位先發出手者對應的防守者（D 的先發）。useMine=true 時，O=對手、D=我隊，套用玩家手動指派 S.defByOpp
@@ -640,36 +635,53 @@ function possession(O,D){
   if(!defS){const pn=POS_NUM[sh.p.pos]||3;defS=D.starters.slice().sort((a,b)=>Math.abs((POS_NUM[a.pos]||3)-pn)-Math.abs((POS_NUM[b.pos]||3)-pn))[0]||D.starters[0];}
   const defW=D.byId[defS.id]||D.players[0];
   const dDef=defS.drtg||60, dStl=defS.stl||0.8, dBlk=defS.blk||0.5;
+  const shN=sh.p.name.split(' ').pop(), dN=defW.p.name.split(' ').pop();
   // 失誤（含抄截）
   const tovP=Math.max(0.05,Math.min(0.20,0.11+(dStl-1)*0.015));
-  if(Math.random()<tovP){if(Math.random()<dStl/(dStl+2.2))defW.stl++;return 0;}
+  if(Math.random()<tovP){if(Math.random()<dStl/(dStl+2.2)){defW.stl++;return {pts:0,ev:{k:'stl',t:dN+' 抄截 '+shN}};}return {pts:0};}
   sh.fga++;
   // 命中率：自身能力 − 對位防守修正（常數可調整節奏/比分；上限壓低避免球星刷高分）
   let makeP=0.48+(eff(sh.p)-80)*0.003+((sh.p.fg||47)-47)*0.003-(dDef-62)*0.0022;
   makeP=Math.max(0.39,Math.min(0.56,makeP)); // 地板拉高、防守影響壓縮 → 避免雪崩式懸殊
-  if(Math.random()<dBlk*0.025){defW.blk++;}                          // 被阻
-  else if(Math.random()<makeP){
-    const val=Math.random()<(THREE_P[sh.p.pos]||0.30)?3:2;
+  if(Math.random()<dBlk*0.025){defW.blk++;return {pts:0,ev:{k:'blk',t:dN+' 阻攻 '+shN+'！'}};}  // 被阻
+  if(Math.random()<makeP){
+    const three=Math.random()<(THREE_P[sh.p.pos]||0.30),val=three?3:2;
     sh.fgm++;sh.pts+=val;
     if(Math.random()<0.55){const aw=O.players.map(x=>x===sh?0:Math.max(0.2,x.p.ast));O.players[wpick(aw)].ast++;}
-    return val;
+    return {pts:val,ev:{k:three?'m3':'m2',off:true,t:shN+(three?' 三分命中 +3':' 進球 +'+val)}};
   }
   // 失手／被阻 → 搶籃板
   if(Math.random()<0.27)O.players[wpick(O.players.map(x=>x.p.reb*0.6))].reb++;   // 進攻籃板（簡化：不補籃）
   else D.players[wpick(D.players.map(x=>x.p.reb*1.0))].reb++;
-  return 0;
+  return {pts:0};
 }
 function simGameDetailed(ta,tb,meIdx){
   const A=engRoster(ta,meIdx===0), B=engRoster(tb,meIdx===1);
   // 對位：玩家那一隊防守時，套用手動指派（對手進攻方向用 useMine）
   A.defMap=buildDefMap(A,B,meIdx===1);B.defMap=buildDefMap(B,A,meIdx===0);
-  const qa=[],qb=[];let sa=0,sb=0;const PQ=26;
-  for(let q=0;q<4;q++){let x=0,y=0;for(let i=0;i<PQ;i++){x+=possession(A,B);y+=possession(B,A);}qa.push(x);qb.push(y);sa+=x;sb+=y;}
-  let g=0;while(sa===sb&&g++<6){let x=0,y=0;for(let i=0;i<8;i++){x+=possession(A,B);y+=possession(B,A);}qa.push(x);qb.push(y);sa+=x;sb+=y;}
+  const nameA=ta.name||"A",nameB=tb.name||"B";
+  const qa=[],qb=[],evts=[],qsum=[];let sa=0,sb=0;const PQ=26;
+  const clk=(q,i)=>{const rem=12*(1-(i+1)/PQ);const mm=Math.floor(rem);return `Q${q+1} ${mm}:${String(Math.floor((rem-mm)*60)).padStart(2,'0')}`;};
+  const add=(ev,side,q,i,c)=>{if(!ev)return;const clutch=(q===3&&i>=PQ-4);
+    if(ev.k==='m3'||ev.k==='blk'||ev.k==='stl'||(clutch&&ev.off))evts.push({c,t:'【'+side+'】'+ev.t,s:sa+'-'+sb,clutch});};
+  for(let q=0;q<4;q++){
+    const st={};[...A.players,...B.players].forEach(x=>st[x.p.id]=x.pts);
+    let x=0,y=0;
+    for(let i=0;i<PQ;i++){const c=clk(q,i);
+      const ra=possession(A,B);x+=ra.pts;sa+=ra.pts;add(ra.ev,nameA,q,i,c);
+      const rb=possession(B,A);y+=rb.pts;sb+=rb.pts;add(rb.ev,nameB,q,i,c);}
+    qa.push(x);qb.push(y);
+    const qtop=T=>{let b=null,bp=0;T.players.forEach(p=>{const d=p.pts-(st[p.p.id]||0);if(d>bp){bp=d;b=p;}});return b?b.p.name.split(' ').pop()+' '+bp+'分':'-';};
+    qsum.push(`Q${q+1}　${nameA} ${x} : ${y} ${nameB}　本節最佳 ${qtop(A)}／${qtop(B)}`);
+  }
+  let g=0;while(sa===sb&&g++<6){let x=0,y=0;for(let i=0;i<8;i++){const ra=possession(A,B);x+=ra.pts;sa+=ra.pts;const rb=possession(B,A);y+=rb.pts;sb+=rb.pts;}qa.push(x);qb.push(y);}
+  // 精華太多 → 保留 clutch、其餘平均抽樣到 ~22 條
+  let hi=evts;
+  if(evts.length>22){const keep=evts.filter(e=>e.clutch),rest=evts.filter(e=>!e.clutch),step=Math.max(1,Math.ceil(rest.length/Math.max(1,22-keep.length))),samp=rest.filter((_,k)=>k%step===0);hi=evts.filter(e=>keep.indexOf(e)>=0||samp.indexOf(e)>=0);}
   const mkBox=T=>T.players.map(x=>({n:x.p.name,pos:x.p.pos,ovr:x.p.ovr,start:x.start,
     min:x.start?ri(30,38):ri(10,22),pts:x.pts,reb:x.reb,ast:x.ast,stl:x.stl,blk:x.blk,
     fg:x.fga?+(x.fgm/x.fga*100).toFixed(1):0})).sort((a,b)=>b.pts-a.pts);
-  return {sa,sb,qa,qb,boxA:mkBox(A),boxB:mkBox(B)};
+  return {sa,sb,qa,qb,boxA:mkBox(A),boxB:mkBox(B),evts:hi,qsum};
 }
 function simGame(ta,tb,meIdx){
   const pa=power(ta,meIdx===0)||50,pb=power(tb,meIdx===1)||50;
@@ -1409,6 +1421,8 @@ function showBoxscore(idx){
         <tr><td style="font-size:10px">${L.b.slice(0,4)}</td>${g.qb.map(q=>`<td>${q}</td>`).join("")}<td style="color:var(--ink)">${g.sb}</td></tr>
       </table></div>
     </div>
+    ${g.qsum&&g.qsum.length?`<div class="card" style="padding:8px 10px"><div class="muted" style="font-weight:700;color:var(--led);margin-bottom:4px">📊 逐節摘要</div>${g.qsum.map(s=>`<div style="font-size:12px;padding:3px 0;border-bottom:1px solid var(--line)">${s}</div>`).join("")}</div>`:""}
+    ${g.evts&&g.evts.length?`<div class="card" style="padding:8px 10px"><div class="muted" style="font-weight:700;color:var(--led);margin-bottom:4px">🎬 比賽精華</div>${g.evts.map(e=>`<div style="font-size:12px;padding:3px 0;display:flex;gap:8px;align-items:baseline"><span class="muted" style="width:60px;flex-shrink:0;font-family:Menlo,monospace;font-size:10px">${e.c}</span><span style="flex:1">${e.t}</span><span class="muted" style="font-family:Menlo,monospace;font-size:10px">${e.s}</span></div>`).join("")}</div>`:""}
     ${sided(L.a,g.boxA,L.meA)}
     ${sided(L.b,g.boxB,!L.meA)}
     <div class="muted" style="font-size:11px;text-align:center;margin:4px 0">● = 先發　數據為單場模擬結果</div>

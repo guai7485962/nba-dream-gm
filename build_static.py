@@ -29,7 +29,7 @@ def format_db_js(players):
     for p in players:
         row = [p["name"], p["pos"], p["pts"], p["reb"], p["ast"],
                p["stl"], p["blk"], p["fg"], p["salary"], p.get("team", ""),
-               p.get("ovr", 0), p.get("def_rtg", 60)]
+               p.get("ovr", 0), p.get("def_rtg", 60), p.get("player_id", 0)]
         lines.append(json.dumps(row, ensure_ascii=False))
     return "let DB=[\n" + ",\n".join(lines) + "\n];"
 

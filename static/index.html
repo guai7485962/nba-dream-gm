@@ -288,7 +288,10 @@ function posOK(pos,slotIdx){return Math.abs((POS_NUM[pos]||3)-(slotIdx+1))<=1;} 
 const rnd=(a,b)=>a+Math.random()*(b-a);
 const ri=(a,b)=>Math.floor(rnd(a,b+1));
 function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
-function mkPlayer(arr,i){const ovr=(arr[10]!=null?arr[10]:calcOvr(arr));return{id:"p"+i,name:arr[0],pos:arr[1],pts:arr[2],reb:arr[3],ast:arr[4],stl:arr[5],blk:arr[6],fg:arr[7],sal:arr[8],team:arr[9]||"",ovr,drtg:arr[11]!=null?arr[11]:60,sta:100,inj:0,yrs:ri(1,3),pot:0,form:0,mv:0,mvH:[]};}
+function mkPlayer(arr,i){const ovr=(arr[10]!=null?arr[10]:calcOvr(arr));return{id:"p"+i,name:arr[0],pos:arr[1],pts:arr[2],reb:arr[3],ast:arr[4],stl:arr[5],blk:arr[6],fg:arr[7],sal:arr[8],team:arr[9]||"",ovr,drtg:arr[11]!=null?arr[11]:60,pid:arr[12]||0,sta:100,inj:0,yrs:ri(1,3),pot:0,form:0,mv:0,mvH:[]};}
+// NBA 官方頭像 CDN（依球員 id）。虛構/角色球員沒有 id → 不顯示
+function headshot(p){return p&&p.pid?`https://cdn.nba.com/headshots/nba/latest/260x190/${p.pid}.png`:"";}
+function avatarHTML(p,size){const u=headshot(p);return u?`<img src="${u}" loading="lazy" style="width:${size}px;height:${size}px;border-radius:50%;object-fit:cover;object-position:center top;background:var(--panel2);flex-shrink:0" onerror="this.style.display='none'">`:"";}
 function val(p){const mv=p.mv||mvBase(p);return mv*3+Math.pow(Math.max(1,p.ovr-64),1.7)*0.5+(p.pot>p.ovr?(p.pot-p.ovr)*2:0)-p.sal*1.2;}
 function payroll(r){return r.reduce((s,p)=>s+p.sal,0);}
 /* 身價市場：基準身價由 OVR+狀態 決定；續約開價＝當日身價 */
@@ -442,7 +445,7 @@ function clonePlayer(src){
   const ovr=(src[10]!=null?src[10]:calcOvr(src));
   return {id:"c"+Date.now().toString(36)+Math.floor(Math.random()*1e9).toString(36),
     name:src[0],pos:src[1],pts:src[2],reb:src[3],ast:src[4],stl:src[5],blk:src[6],fg:src[7],
-    sal:src[8],team:src[9]||"",ovr,drtg:src[11]!=null?src[11]:60,sta:100,inj:0,yrs:0,pot:0,form:0,mv:0,mvH:[]};
+    sal:src[8],team:src[9]||"",ovr,drtg:src[11]!=null?src[11]:60,pid:src[12]||0,sta:100,inj:0,yrs:0,pot:0,form:0,mv:0,mvH:[]};
 }
 /* 選秀（球星市場）：每天刷新 4 次、每次 10 名真實球員，開價隨身價浮動 → 可挖便宜大咖 */
 function rollDraftOffers(){
@@ -1024,8 +1027,8 @@ async function load(){try{const r=await window.storage.get("nba_gm_idle");if(r&&
     if(!S.conf)S.conf=(S.ai[0]&&S.ai[0].conf)||"E";
     if(S.po&&!S.po.E){S.po=null;if(S.phase==="playoffs"){S.phase="regular";S.nextAt=nextSlot(Date.now());}}
     // 依姓名從 DB 回填：球隊縮寫 + 位置 + 新版 OVR + 防守力（讓舊存檔球員套用新資料）
-    const _tm={},_ov={},_ps={},_dr={};DB.forEach(r=>{_tm[r[0]]=r[9]||"";if(r[10]!=null)_ov[r[0]]=r[10];if(r[1])_ps[r[0]]=r[1];if(r[11]!=null)_dr[r[0]]=r[11];});
-    const _fix=p=>{if(!p)return;if(!p.team&&_tm[p.name])p.team=_tm[p.name];if(_ov[p.name]!=null)p.ovr=_ov[p.name];if(_ps[p.name])p.pos=_ps[p.name];if(_dr[p.name]!=null)p.drtg=_dr[p.name];if(p.drtg==null)p.drtg=60;};
+    const _tm={},_ov={},_ps={},_dr={},_pid={};DB.forEach(r=>{_tm[r[0]]=r[9]||"";if(r[10]!=null)_ov[r[0]]=r[10];if(r[1])_ps[r[0]]=r[1];if(r[11]!=null)_dr[r[0]]=r[11];if(r[12])_pid[r[0]]=r[12];});
+    const _fix=p=>{if(!p)return;if(!p.team&&_tm[p.name])p.team=_tm[p.name];if(_ov[p.name]!=null)p.ovr=_ov[p.name];if(_ps[p.name])p.pos=_ps[p.name];if(_dr[p.name]!=null)p.drtg=_dr[p.name];if(p.drtg==null)p.drtg=60;if(!p.pid&&_pid[p.name])p.pid=_pid[p.name];};
     allPlayers().forEach(_fix);
     if(S.draft&&S.draft.pool)S.draft.pool.forEach(_fix);
     allPlayers().forEach(initMv);
@@ -1092,6 +1095,7 @@ function mvChip(p){
 }
 function pRow(p,btnHtml,showSta){
   return `<div class="p-row" data-pid="${p.id}">
+    ${avatarHTML(p,38)}
     <div class="ovr ${ovrCls(p.ovr)}">${p.ovr}<small>OVR</small></div>
     <div class="p-info">
       <div class="p-name">${formIc(p)}${p.name} ${pTags(p)}</div>
@@ -1163,9 +1167,12 @@ function courtView(){
     .sort((a,b)=>(POS_NUM[a.pos]||3)-(POS_NUM[b.pos]||3)); // 依位置由控球到中鋒排序
   let h=`<div class="court"><div class="arc"></div><div class="key"></div><div class="hoop"></div>`;
   COURT_SPOTS.forEach((sp,i)=>{
-    const p=starters[i];
+    const p=starters[i];const av=p?headshot(p):"";
+    const tok=av
+      ? `<div class="tok ${ovrCls(p.ovr)}" style="background-image:url('${av}');background-size:cover;background-position:center top;position:relative"><span style="position:absolute;bottom:-3px;right:-3px;background:#0b0c10;border:1px solid currentColor;border-radius:6px;font-size:10px;padding:0 3px;line-height:1.4">${p.ovr}</span></div>`
+      : `<div class="tok ${p?ovrCls(p.ovr):''}">${p?p.ovr:'＋'}</div>`;
     h+=`<div class="spot" style="top:${sp[1]}%;left:${sp[2]}%">
-      <div class="tok ${p?ovrCls(p.ovr):''}">${p?p.ovr:'＋'}</div>
+      ${tok}
       <div class="lbl">${p?p.pos:sp[0]}</div>
       <div class="pname" style="color:${p?ovrColor(p.ovr):'var(--dim)'}">${p?p.name.split(' ').pop():'空'}</div>
     </div>`;
@@ -1232,6 +1239,7 @@ function vMarket(){
   const lock=S.phase==="playoffs";
   const offers=S.draftBoard.offers.filter(p=>marketPos==="ALL"||p.pos===marketPos);
   const offerRow=p=>`<div class="p-row" data-pid="${p.id}">
+    ${avatarHTML(p,38)}
     <div class="ovr ${ovrCls(p.ovr)}">${p.ovr}<small>OVR</small></div>
     <div class="p-info">
       <div class="p-name">${p.name} ${p.bargain?'<span style="color:var(--led);font-weight:700">💎划算</span>':''}</div>

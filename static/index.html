@@ -681,7 +681,14 @@ function simGameDetailed(ta,tb,meIdx){
   const mkBox=T=>T.players.map(x=>({n:x.p.name,pos:x.p.pos,ovr:x.p.ovr,start:x.start,
     min:x.start?ri(30,38):ri(10,22),pts:x.pts,reb:x.reb,ast:x.ast,stl:x.stl,blk:x.blk,
     fg:x.fga?+(x.fgm/x.fga*100).toFixed(1):0})).sort((a,b)=>b.pts-a.pts);
-  return {sa,sb,qa,qb,boxA:mkBox(A),boxB:mkBox(B),evts:hi,qsum};
+  // 本場防守對位：玩家方防守者 → 守 → 對手（依對手位置排序）
+  const oppR=meIdx===0?B:A, myR=meIdx===0?A:B; // oppR.defMap 把對手出手者對到我方防守者
+  const matchup=[...oppR.starters].sort((a,b)=>(POS_NUM[a.pos]||3)-(POS_NUM[b.pos]||3)).map(op=>{
+    const d=oppR.defMap[op.id];
+    return {oppN:op.name.split(' ').pop(),oppPos:op.pos,oppOvr:op.ovr,
+            meN:d?d.name.split(' ').pop():'-',mePos:d?d.pos:'',meDr:d?(d.drtg||'-'):''};
+  });
+  return {sa,sb,qa,qb,boxA:mkBox(A),boxB:mkBox(B),evts:hi,qsum,matchup,myName:myR.name};
 }
 function simGame(ta,tb,meIdx){
   const pa=power(ta,meIdx===0)||50,pb=power(tb,meIdx===1)||50;
@@ -1258,7 +1265,7 @@ function vMarket(){
     <div class="ovr ${ovrCls(p.ovr)}">${p.ovr}<small>OVR</small></div>
     <div class="p-info">
       <div class="p-name">${p.name} ${p.bargain?'<span style="color:var(--led);font-weight:700">💎划算</span>':''}</div>
-      <div class="p-meta">${p.team?'<span style="color:var(--blue);font-weight:600">'+p.team+'</span> ':''}${p.pos}・${p.pts}分 ${p.reb}板 ${p.ast}助・身價 $${(p.mv||0).toFixed(1)}M</div>
+      <div class="p-meta">${p.team?'<span style="color:var(--blue);font-weight:600">'+p.team+'</span> ':''}${p.pos}・${p.pts}分 ${p.reb}板 ${p.ast}助・防${p.drtg||'-'}・身價 $${(p.mv||0).toFixed(1)}M</div>
     </div>
     <div class="p-sal" style="color:${p.bargain?'var(--led)':'var(--ink)'}">$${(p.ask||p.sal).toFixed(1)}M<small>開價</small></div>
     <button class="btn sm" ${lock?'disabled':''} data-act="sign" data-id="${p.id}">簽下</button>
@@ -1300,7 +1307,6 @@ function vTrade(){
   const chip=(p,side)=>{
     const on=(side==="mine"?tradeSel.mine:tradeSel.theirs).includes(p.id);
     return `<div class="tcard ${on?"on":""}" data-act="tsel" data-side="${side}" data-id="${p.id}">
-      ${avatarHTML(p,30)}
       <div class="ovr ${ovrCls(p.ovr)}" style="min-width:32px;height:32px;font-size:13px">${p.ovr}</div>
       <div style="flex:1;min-width:0">
         <div class="tname">${formIc(p)}${p.name}</div>
@@ -1426,6 +1432,7 @@ function showBoxscore(idx){
     ${sided(L.a,g.boxA,L.meA)}
     ${sided(L.b,g.boxB,!L.meA)}
     <div class="muted" style="font-size:11px;text-align:center;margin:4px 0">● = 先發　數據為單場模擬結果</div>
+    ${g.matchup&&g.matchup.length?`<div class="card" style="padding:8px 10px"><div class="muted" style="font-weight:700;color:var(--led);margin-bottom:4px">🛡 本場防守對位（你的防守者 守 對手）</div>${g.matchup.map(m=>`<div class="flex" style="gap:6px;align-items:center;font-size:12px;padding:3px 0;border-bottom:1px solid var(--line)"><span style="flex:1;text-align:left;font-weight:600">${m.meN}<span class="muted" style="font-size:9px"> ${m.mePos}・防${m.meDr}</span></span><span style="color:var(--maple);font-size:11px">守</span><span style="flex:1;text-align:right;font-weight:600">${m.oppN}<span class="muted" style="font-size:9px"> ${m.oppPos}・OVR${m.oppOvr}</span></span></div>`).join("")}</div>`:""}
     ${g.qsum&&g.qsum.length?`<div class="card" style="padding:8px 10px"><div class="muted" style="font-weight:700;color:var(--led);margin-bottom:4px">📊 逐節摘要</div>${g.qsum.map(s=>`<div style="font-size:12px;padding:3px 0;border-bottom:1px solid var(--line)">${s}</div>`).join("")}</div>`:""}
     ${g.evts&&g.evts.length?`<div class="card" style="padding:8px 10px"><div class="muted" style="font-weight:700;color:var(--led);margin-bottom:4px">🎬 比賽精華</div>${g.evts.map(e=>`<div style="font-size:12px;padding:3px 0;display:flex;gap:8px;align-items:baseline"><span class="muted" style="width:60px;flex-shrink:0;font-family:Menlo,monospace;font-size:10px">${e.c}</span><span style="flex:1">${e.t}</span><span class="muted" style="font-family:Menlo,monospace;font-size:10px">${e.s}</span></div>`).join("")}</div>`:""}
     <button class="btn block" data-act="closemodal">關閉</button>

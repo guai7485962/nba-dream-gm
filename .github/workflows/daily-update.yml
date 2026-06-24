@@ -4,7 +4,7 @@ name: 每週更新 NBA 球員數據
 # 部署交給 Cloudflare Pages：它監看 repo，任何 push（包含這個 workflow 的資料更新）都會自動 build + deploy。
 on:
   schedule:
-    - cron: '0 15 * * 1'   # 每週一台灣時間 23:00 自動更新
+    - cron: '0 15 * * *'   # 每天台灣時間 23:00 自動更新（數據沒變時會自動跳過提交，不會白部署）
   workflow_dispatch:         # 也可在 GitHub 網頁手動觸發
 
 permissions:

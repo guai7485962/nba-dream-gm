@@ -1026,9 +1026,12 @@ async function load(){try{const r=await window.storage.get("nba_gm_idle");if(r&&
     S.ai.forEach(t=>{if(!t.conf)t.conf=_cf[t.abbr]||"E";});
     if(!S.conf)S.conf=(S.ai[0]&&S.ai[0].conf)||"E";
     if(S.po&&!S.po.E){S.po=null;if(S.phase==="playoffs"){S.phase="regular";S.nextAt=nextSlot(Date.now());}}
-    // 依姓名從 DB 回填：球隊縮寫 + 位置 + 新版 OVR + 防守力（讓舊存檔球員套用新資料）
-    const _tm={},_ov={},_ps={},_dr={},_pid={};DB.forEach(r=>{_tm[r[0]]=r[9]||"";if(r[10]!=null)_ov[r[0]]=r[10];if(r[1])_ps[r[0]]=r[1];if(r[11]!=null)_dr[r[0]]=r[11];if(r[12])_pid[r[0]]=r[12];});
-    const _fix=p=>{if(!p)return;if(!p.team&&_tm[p.name])p.team=_tm[p.name];if(_ov[p.name]!=null)p.ovr=_ov[p.name];if(_ps[p.name])p.pos=_ps[p.name];if(_dr[p.name]!=null)p.drtg=_dr[p.name];if(p.drtg==null)p.drtg=60;if(!p.pid&&_pid[p.name])p.pid=_pid[p.name];};
+    // 依姓名從最新 DB 刷新真實球員：場均數據 + 位置 + OVR + 防守力 + 頭像（每天更新會即時反映；薪資維持簽約）
+    const _byName={};DB.forEach(r=>{_byName[r[0]]=r;});
+    const _fix=p=>{if(!p)return;const r=_byName[p.name];
+      if(r){p.pts=r[2];p.reb=r[3];p.ast=r[4];p.stl=r[5];p.blk=r[6];p.fg=r[7];
+        if(r[1])p.pos=r[1];if(r[10]!=null)p.ovr=r[10];if(r[11]!=null)p.drtg=r[11];if(r[12])p.pid=r[12];if(!p.team)p.team=r[9]||"";}
+      if(p.drtg==null)p.drtg=60;};
     allPlayers().forEach(_fix);
     if(S.draft&&S.draft.pool)S.draft.pool.forEach(_fix);
     allPlayers().forEach(initMv);

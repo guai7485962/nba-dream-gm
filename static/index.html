@@ -1300,10 +1300,12 @@ function vTrade(){
   const chip=(p,side)=>{
     const on=(side==="mine"?tradeSel.mine:tradeSel.theirs).includes(p.id);
     return `<div class="tcard ${on?"on":""}" data-act="tsel" data-side="${side}" data-id="${p.id}">
+      ${avatarHTML(p,30)}
       <div class="ovr ${ovrCls(p.ovr)}" style="min-width:32px;height:32px;font-size:13px">${p.ovr}</div>
       <div style="flex:1;min-width:0">
         <div class="tname">${formIc(p)}${p.name}</div>
-        <div class="muted" style="font-size:10px">${p.team?p.team+"・":""}${p.pos}・年薪$${(p.sal||0).toFixed(1)}M・身價$${(p.mv||0).toFixed(1)}M</div>
+        <div class="muted" style="font-size:10px">${p.team?p.team+"・":""}${p.pos}・${p.pts}分 ${p.reb}板 ${p.ast}助・防${p.drtg||'-'}</div>
+        <div class="muted" style="font-size:10px">年薪$${(p.sal||0).toFixed(1)}M・身價$${(p.mv||0).toFixed(1)}M</div>
       </div>
       ${on?'<span style="color:var(--led);font-weight:800">✓</span>':""}
     </div>`;
@@ -1421,11 +1423,11 @@ function showBoxscore(idx){
         <tr><td style="font-size:10px">${L.b.slice(0,4)}</td>${g.qb.map(q=>`<td>${q}</td>`).join("")}<td style="color:var(--ink)">${g.sb}</td></tr>
       </table></div>
     </div>
-    ${g.qsum&&g.qsum.length?`<div class="card" style="padding:8px 10px"><div class="muted" style="font-weight:700;color:var(--led);margin-bottom:4px">📊 逐節摘要</div>${g.qsum.map(s=>`<div style="font-size:12px;padding:3px 0;border-bottom:1px solid var(--line)">${s}</div>`).join("")}</div>`:""}
-    ${g.evts&&g.evts.length?`<div class="card" style="padding:8px 10px"><div class="muted" style="font-weight:700;color:var(--led);margin-bottom:4px">🎬 比賽精華</div>${g.evts.map(e=>`<div style="font-size:12px;padding:3px 0;display:flex;gap:8px;align-items:baseline"><span class="muted" style="width:60px;flex-shrink:0;font-family:Menlo,monospace;font-size:10px">${e.c}</span><span style="flex:1">${e.t}</span><span class="muted" style="font-family:Menlo,monospace;font-size:10px">${e.s}</span></div>`).join("")}</div>`:""}
     ${sided(L.a,g.boxA,L.meA)}
     ${sided(L.b,g.boxB,!L.meA)}
     <div class="muted" style="font-size:11px;text-align:center;margin:4px 0">● = 先發　數據為單場模擬結果</div>
+    ${g.qsum&&g.qsum.length?`<div class="card" style="padding:8px 10px"><div class="muted" style="font-weight:700;color:var(--led);margin-bottom:4px">📊 逐節摘要</div>${g.qsum.map(s=>`<div style="font-size:12px;padding:3px 0;border-bottom:1px solid var(--line)">${s}</div>`).join("")}</div>`:""}
+    ${g.evts&&g.evts.length?`<div class="card" style="padding:8px 10px"><div class="muted" style="font-weight:700;color:var(--led);margin-bottom:4px">🎬 比賽精華</div>${g.evts.map(e=>`<div style="font-size:12px;padding:3px 0;display:flex;gap:8px;align-items:baseline"><span class="muted" style="width:60px;flex-shrink:0;font-family:Menlo,monospace;font-size:10px">${e.c}</span><span style="flex:1">${e.t}</span><span class="muted" style="font-family:Menlo,monospace;font-size:10px">${e.s}</span></div>`).join("")}</div>`:""}
     <button class="btn block" data-act="closemodal">關閉</button>
   </div>`;
   bg.addEventListener("click",e=>{if(e.target===bg||e.target.dataset.act==="closemodal")bg.remove();});

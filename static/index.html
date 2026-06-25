@@ -31,8 +31,9 @@ nav button .badge{position:absolute;top:6px;right:18%;width:8px;height:8px;borde
 h2{font-size:15px;margin:6px 2px 10px;letter-spacing:.5px}
 h2 .tag{font-size:11px;color:var(--dim);font-weight:400;margin-left:8px}
 .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:10px}
-.p-row{display:flex;align-items:center;gap:10px;padding:9px 10px;border-bottom:1px solid var(--line)}
+.p-row{display:flex;align-items:center;gap:10px;padding:9px 10px;border-bottom:1px solid var(--line);flex-wrap:wrap}
 .p-row:last-child{border-bottom:none}
+.p-row2{flex-basis:100%;display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin-top:5px}
 .ovr{min-width:40px;height:40px;border-radius:9px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-weight:800;font-size:16px;background:var(--panel2);border:1px solid var(--line);line-height:1}
 .ovr small{font-size:8px;font-weight:500;color:var(--dim);margin-top:1px}
 .ovr.elite{color:#ffd166;border-color:#8a6a1f;background:#2a2415}   /* 金：頂級 */
@@ -1132,12 +1133,14 @@ function pRow(p,btnHtml,showSta){
     <div class="p-info">
       <div class="p-name">${formIc(p)}${p.name} ${pTags(p)}</div>
       <div class="p-meta">${p.team?'<span style="color:var(--blue);font-weight:600">'+p.team+'</span>・':''}${p.pos}・約剩 ${Math.max(0,p.yrs)} 年</div>
+    </div>
+    <div class="p-sal">$${p.sal}M<small>年薪</small></div>
+    ${btnHtml||""}
+    <div class="p-row2">
       <div class="p-stat"><span>得<b>${p.pts}</b></span><span>籃<b>${p.reb}</b></span><span>助<b>${p.ast}</b></span><span>防<b class="d">${p.drtg||'-'}</b></span></div>
       ${mvChip(p)}
       ${showSta?staBar(p):""}
     </div>
-    <div class="p-sal">$${p.sal}M<small>年薪</small></div>
-    ${btnHtml||""}
   </div>`;
 }
 function fmtT(ms){const d=new Date(ms);return (d.getMonth()+1)+"/"+d.getDate()+" "+String(d.getHours()).padStart(2,"0")+":"+String(d.getMinutes()).padStart(2,"0");}
@@ -1278,10 +1281,10 @@ function vMarket(){
     <div class="p-info">
       <div class="p-name">${p.name} ${p.bargain?'<span style="color:var(--led);font-weight:700">💎划算</span>':''}</div>
       <div class="p-meta">${p.team?'<span style="color:var(--blue);font-weight:600">'+p.team+'</span>・':''}${p.pos}・身價 $${(p.mv||0).toFixed(1)}M</div>
-      <div class="p-stat"><span>得<b>${p.pts}</b></span><span>籃<b>${p.reb}</b></span><span>助<b>${p.ast}</b></span><span>防<b class="d">${p.drtg||'-'}</b></span></div>
     </div>
     <div class="p-sal" style="color:${p.bargain?'var(--led)':'var(--ink)'}">$${(p.ask||p.sal).toFixed(1)}M<small>開價</small></div>
     <button class="btn sm" ${lock?'disabled':''} data-act="sign" data-id="${p.id}">簽下</button>
+    <div class="p-row2"><div class="p-stat"><span>得<b>${p.pts}</b></span><span>籃<b>${p.reb}</b></span><span>助<b>${p.ast}</b></span><span>防<b class="d">${p.drtg||'-'}</b></span></div></div>
   </div>`;
   let h=`<h2>選秀・球星市場 <span class="tag">剩餘空間 $${room}M${lock?'・季後賽鎖定':''}</span></h2>`;
   h+=`<div class="card flex">

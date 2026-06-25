@@ -46,7 +46,8 @@ h2 .tag{font-size:11px;color:var(--dim);font-weight:400;margin-left:8px}
 .p-stat{display:flex;gap:13px;font-size:11px;color:var(--dim);margin-top:4px;white-space:nowrap;overflow:hidden}
 .p-stat b{color:var(--ink);font-weight:700;font-size:12.5px;margin-left:2px;font-family:Menlo,monospace}
 .p-stat .d{color:var(--blue)}
-.sta{height:4px;background:var(--panel2);border-radius:2px;margin-top:5px;overflow:hidden;max-width:130px}
+.sta{height:5px;background:var(--panel2);border-radius:3px;overflow:hidden;width:110px;flex:0 0 110px}
+.sta-wrap{display:flex;align-items:center;gap:6px;font-size:10.5px;color:var(--dim)}
 .sta i{display:block;height:100%;border-radius:2px;background:var(--good)}
 .sta i.mid{background:var(--led)} .sta i.low{background:var(--bad)}
 .p-sal{font-size:13px;font-weight:700;text-align:right;white-space:nowrap}
@@ -1112,7 +1113,7 @@ function ovrCls(o){return o>=90?"elite":o>=84?"great":o>=78?"solid":o>=72?"ok":"
 function ovrColor(o){return o>=90?"#ffd166":o>=84?"#c79bff":o>=78?"var(--blue)":o>=72?"var(--good)":"var(--ink)";}
 function staBar(p){
   const c=p.sta>=60?"":p.sta>=30?"mid":"low";
-  return `<div class="sta"><i class="${c}" style="width:${p.sta}%"></i></div>`;
+  return `<div class="sta-wrap">體力<div class="sta"><i class="${c}" style="width:${p.sta}%"></i></div>${Math.round(p.sta)}</div>`;
 }
 function pTags(p){
   let t="";

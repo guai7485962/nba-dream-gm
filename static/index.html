@@ -40,8 +40,11 @@ h2 .tag{font-size:11px;color:var(--dim);font-weight:400;margin-left:8px}
 .ovr.solid{color:var(--blue)}                                       /* 藍：先發 */
 .ovr.ok{color:var(--good)}                                          /* 綠：輪替 */
 .p-info{flex:1;min-width:0}
-.p-name{font-weight:700;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.p-meta{font-size:11.5px;color:var(--dim);margin-top:2px}
+.p-name{font-weight:700;font-size:14.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.p-meta{font-size:11px;color:var(--dim);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.p-stat{display:flex;gap:13px;font-size:11px;color:var(--dim);margin-top:4px;white-space:nowrap;overflow:hidden}
+.p-stat b{color:var(--ink);font-weight:700;font-size:12.5px;margin-left:2px;font-family:Menlo,monospace}
+.p-stat .d{color:var(--blue)}
 .sta{height:4px;background:var(--panel2);border-radius:2px;margin-top:5px;overflow:hidden;max-width:130px}
 .sta i{display:block;height:100%;border-radius:2px;background:var(--good)}
 .sta i.mid{background:var(--led)} .sta i.low{background:var(--bad)}
@@ -374,9 +377,16 @@ function nextOpponent(){
 // 目前對手對位的完整指派（玩家覆寫優先，其餘就近配對）。回傳 {oppId: 我方先發物件}
 function currentDefMap(opp){
   const opSt=lineupOf(opp,false).st, mySt=lineupOf({roster:S.roster},true).st;
-  const map={};matchupPairs(opSt,mySt).forEach(pr=>{map[pr.off.id]=pr.def;});
+  const map={};matchupPairs(opSt,mySt).forEach(pr=>{map[pr.off.id]=pr.def;}); // 預設一對一配對
   if(S.defOppKey!==opp.name){S.defByOpp={};S.defOppKey=opp.name;} // 換對手 → 重置手動指派
-  if(S.defByOpp)opSt.forEach(o=>{const d=mySt.find(p=>p.id===S.defByOpp[o.id]);if(d)map[o.id]=d;});
+  // 驗證手動指派：必須涵蓋全部對手、值都是當前先發、且不重複（否則換過先發會殘留 → 重複球員），不合格就放棄回到預設
+  if(S.defByOpp){
+    const myIds=new Set(mySt.map(p=>p.id));
+    const vals=opSt.map(o=>S.defByOpp[o.id]);
+    const ok=vals.every(v=>v&&myIds.has(v))&&new Set(vals).size===vals.length;
+    if(ok)opSt.forEach(o=>{const d=mySt.find(p=>p.id===S.defByOpp[o.id]);if(d)map[o.id]=d;});
+    else S.defByOpp={}; // 不合格 → 清掉殘留指派
+  }
   return {opSt,mySt,map};
 }
 // 對位面板：點一個對手列選取，再點另一個 → 兩名防守者互換
@@ -1121,7 +1131,8 @@ function pRow(p,btnHtml,showSta){
     <div class="ovr ${ovrCls(p.ovr)}">${p.ovr}<small>OVR</small></div>
     <div class="p-info">
       <div class="p-name">${formIc(p)}${p.name} ${pTags(p)}</div>
-      <div class="p-meta">${p.team?'<span style="color:var(--blue);font-weight:600">'+p.team+'</span> ':''}${p.pos}・${p.pts}分 ${p.reb}板 ${p.ast}助・防 ${p.drtg||'-'}・約剩 ${Math.max(0,p.yrs)} 年</div>
+      <div class="p-meta">${p.team?'<span style="color:var(--blue);font-weight:600">'+p.team+'</span>・':''}${p.pos}・約剩 ${Math.max(0,p.yrs)} 年</div>
+      <div class="p-stat"><span>得<b>${p.pts}</b></span><span>籃<b>${p.reb}</b></span><span>助<b>${p.ast}</b></span><span>防<b class="d">${p.drtg||'-'}</b></span></div>
       ${mvChip(p)}
       ${showSta?staBar(p):""}
     </div>
@@ -1180,6 +1191,7 @@ function togStarter(id){
     if(S.starters.length>=5)return toast("先發已滿 5 人，先取消一人");
     S.starters.push(id);
   }
+  S.defByOpp={}; // 換先發 → 清掉舊的手動防守指派，避免殘留出現重複
   save();render();
 }
 /* ===== 半場先發圖（純顯示：把先發 5 人依位置排到場上；不限位置、避免排不出陣容） ===== */
@@ -1265,7 +1277,8 @@ function vMarket(){
     <div class="ovr ${ovrCls(p.ovr)}">${p.ovr}<small>OVR</small></div>
     <div class="p-info">
       <div class="p-name">${p.name} ${p.bargain?'<span style="color:var(--led);font-weight:700">💎划算</span>':''}</div>
-      <div class="p-meta">${p.team?'<span style="color:var(--blue);font-weight:600">'+p.team+'</span> ':''}${p.pos}・${p.pts}分 ${p.reb}板 ${p.ast}助・防${p.drtg||'-'}・身價 $${(p.mv||0).toFixed(1)}M</div>
+      <div class="p-meta">${p.team?'<span style="color:var(--blue);font-weight:600">'+p.team+'</span>・':''}${p.pos}・身價 $${(p.mv||0).toFixed(1)}M</div>
+      <div class="p-stat"><span>得<b>${p.pts}</b></span><span>籃<b>${p.reb}</b></span><span>助<b>${p.ast}</b></span><span>防<b class="d">${p.drtg||'-'}</b></span></div>
     </div>
     <div class="p-sal" style="color:${p.bargain?'var(--led)':'var(--ink)'}">$${(p.ask||p.sal).toFixed(1)}M<small>開價</small></div>
     <button class="btn sm" ${lock?'disabled':''} data-act="sign" data-id="${p.id}">簽下</button>
@@ -1309,9 +1322,9 @@ function vTrade(){
     return `<div class="tcard ${on?"on":""}" data-act="tsel" data-side="${side}" data-id="${p.id}">
       <div class="ovr ${ovrCls(p.ovr)}" style="min-width:32px;height:32px;font-size:13px">${p.ovr}</div>
       <div style="flex:1;min-width:0">
-        <div class="tname">${formIc(p)}${p.name}</div>
-        <div class="muted" style="font-size:10px">${p.team?p.team+"・":""}${p.pos}・${p.pts}分 ${p.reb}板 ${p.ast}助・防${p.drtg||'-'}</div>
-        <div class="muted" style="font-size:10px">年薪$${(p.sal||0).toFixed(1)}M・身價$${(p.mv||0).toFixed(1)}M</div>
+        <div class="tname">${formIc(p)}${p.name} <span class="muted" style="font-size:10px;font-weight:400">${p.team?p.team+"・":""}${p.pos}</span></div>
+        <div class="p-stat" style="margin-top:2px"><span>得<b>${p.pts}</b></span><span>籃<b>${p.reb}</b></span><span>助<b>${p.ast}</b></span><span>防<b class="d">${p.drtg||'-'}</b></span></div>
+        <div class="muted" style="font-size:10px;margin-top:2px">年薪 $${(p.sal||0).toFixed(1)}M・身價 $${(p.mv||0).toFixed(1)}M</div>
       </div>
       ${on?'<span style="color:var(--led);font-weight:800">✓</span>':""}
     </div>`;

@@ -173,6 +173,7 @@ def _normalize_pos(pos_raw):
 # 手動位置修正：NBA 官方常把「組織前鋒」等球員列成 F/G-F，數據也難推回真正位置。
 # 這份清單對知名球員強制指定位置（依姓名，含去變音符號比對）。可自行增補。
 POSITION_OVERRIDE = {
+    "Stephen Curry": "PG",
     "Luka Doncic": "PG",
     "LeBron James": "SF",
     "Ben Simmons": "PG",

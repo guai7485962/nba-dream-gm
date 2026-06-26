@@ -77,6 +77,89 @@ input,select{width:100%;background:var(--panel2);border:1px solid var(--line);co
 .sb-q td,.sb-q th{padding:2px 10px;text-align:center;color:var(--dim)}
 .sb-q td{color:var(--ink)} .sb-q th{font-weight:400;font-size:10px}
 .countdown{font-family:"SF Mono",Menlo,monospace;font-size:34px;font-weight:700;color:var(--led);text-shadow:0 0 14px rgba(255,176,46,.4);text-align:center;letter-spacing:2px}
+.av-ph{border-radius:50%;background:var(--panel2);color:var(--dim);display:flex;align-items:center;justify-content:center;font-weight:700}
+.av-wrap{position:relative;flex-shrink:0}
+.lrow{display:flex;gap:4px;justify-content:center;margin-bottom:6px}
+.lrow.mine .lchip{border-color:var(--maple-deep)}
+.lchip{flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;gap:1px;padding:4px 2px;background:#14161d;border:1px solid var(--line);border-radius:8px;transition:transform .15s,box-shadow .15s,border-color .15s}
+.lchip .lc-av{opacity:.55;transition:opacity .15s}
+.lchip .ln{font-size:10px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.lchip .lp{font-size:8px;color:var(--dim)}
+.lchip.active{border-color:var(--led);box-shadow:0 0 10px rgba(255,176,46,.5);transform:translateY(-2px) scale(1.04)}
+.lchip.active .lc-av{opacity:1}
+.lchip.def{border-color:var(--blue);box-shadow:0 0 8px rgba(90,150,255,.35)}
+.lchip.def .lc-av{opacity:.9}
+.court2{position:relative;height:120px;background:linear-gradient(#191c24,#13151c);border:2px solid var(--maple-deep);border-radius:12px;overflow:hidden;margin-bottom:6px}
+.court2 .c-arc{position:absolute;bottom:4%;left:50%;transform:translateX(-50%);width:70%;height:78%;border:2px solid #2c313d;border-bottom:none;border-radius:50% 50% 0 0/72% 72% 0 0}
+.court2 .c-key{position:absolute;bottom:0;left:50%;transform:translateX(-50%);width:30%;height:42%;border:2px solid #2c313d;border-bottom:none;background:rgba(217,142,63,.05)}
+.court2 .c-hoop{position:absolute;bottom:5%;left:50%;transform:translateX(-50%);width:12px;height:12px;border:2px solid var(--maple);border-radius:50%}
+.spot{position:absolute;left:0;right:0;display:flex;justify-content:center;align-items:center;gap:8px;transition:top .2s}
+.spot.z3{top:8%}.spot.z2{top:34%}
+.spot-side{display:flex;flex-direction:column;align-items:center;gap:2px;width:74px}
+.sp-av{position:relative;border-radius:50%}
+.sp-av.glow{box-shadow:0 0 0 2px var(--led),0 0 14px rgba(255,176,46,.55);animation:wpop .25s ease-out}
+.sp-av.sm{box-shadow:0 0 0 2px var(--blue)}
+.sp-av.empty{width:42px;height:42px;border-radius:50%;background:rgba(255,255,255,.03)}
+@keyframes wpop{from{transform:scale(.7)}to{transform:scale(1)}}
+.sp-n{font-size:11px;font-weight:700;white-space:nowrap}
+.sp-n.dim{color:var(--dim);font-weight:600}
+.spot-act{display:flex;flex-direction:column;align-items:center;gap:1px;min-width:54px}
+.spot-act .sp-glyph{font-size:26px;line-height:1;animation:wpop .25s ease-out}
+.spot-act .sp-lab{font-size:11px;font-weight:800;white-space:nowrap}
+.spot-act.a-make .sp-lab{color:var(--led)}
+.spot-act.a-miss .sp-lab,.spot-act.a-tov .sp-lab{color:var(--dim)}
+.spot-act.a-blk .sp-lab{color:#c79bff}
+.spot-act.a-stl .sp-lab{color:var(--blue)}
+.watchlog.short{height:108px}
+.watchlog{height:300px;overflow-y:auto;background:#0b0c10;border:1px solid var(--line);border-radius:10px;padding:6px 8px;margin-bottom:8px;display:flex;flex-direction:column}
+.court3{position:relative;height:248px;background:radial-gradient(120% 80% at 50% 92%,#222734,#14161d);border:2px solid var(--maple-deep);border-radius:12px;overflow:hidden;margin-bottom:6px}
+.court3 .c-arc{position:absolute;bottom:2%;left:50%;transform:translateX(-50%);width:80%;height:150%;border:2px solid #2c313d;border-bottom:none;border-radius:50% 50% 0 0/64% 64% 0 0}
+.court3 .c-key{position:absolute;bottom:0;left:50%;transform:translateX(-50%);width:26%;height:32%;border:2px solid #2c313d;border-bottom:none;background:rgba(217,142,63,.05)}
+.court3 .c-hoop{position:absolute;bottom:6%;left:50%;transform:translateX(-50%);width:13px;height:13px;border:2px solid var(--maple);border-radius:50%}
+.ptok{position:absolute;transform:translate(-50%,-50%);transition:left .42s ease,top .42s ease;display:flex;flex-direction:column;align-items:center;gap:2px;z-index:2}
+.ptok .pt-av{border-radius:50%;transition:transform .2s,box-shadow .2s;box-shadow:0 0 0 2px #3a4256}
+.ptok.mine .pt-av{box-shadow:0 0 0 2px var(--maple)}
+.ptok.opp .pt-av{box-shadow:0 0 0 2px #51607d}
+.ptok .pt-n{font-size:9px;font-weight:700;line-height:1.2;white-space:nowrap;color:var(--ink);background:rgba(0,0,0,.45);padding:0 4px;border-radius:5px}
+.ptok.on-def .pt-av{opacity:.78}
+.ptok.shooter{z-index:6}
+.ptok.shooter .pt-av{transform:scale(1.22);box-shadow:0 0 0 2px var(--led),0 0 14px rgba(255,176,46,.75)}
+.ptok.guard .pt-av{box-shadow:0 0 0 2px var(--blue),0 0 9px rgba(90,150,255,.55);opacity:1}
+.ball{position:absolute;transform:translate(-50%,-50%);transition:left .26s ease,top .34s ease;font-size:15px;z-index:7;filter:drop-shadow(0 1px 3px rgba(0,0,0,.7))}
+.glyphpop{position:absolute;transform:translate(-50%,-50%) scale(.5);opacity:0;font-size:30px;z-index:8;pointer-events:none;transition:opacity .16s,transform .16s}
+.glyphpop.show{opacity:1;transform:translate(-50%,-50%) scale(1.1)}
+.wcap{text-align:center;font-size:12.5px;font-weight:700;min-height:18px;margin-bottom:8px;color:var(--dim)}
+.wcap.a-make{color:var(--led)} .wcap.a-blk{color:#c79bff} .wcap.a-stl{color:var(--blue)} .wcap.a-miss,.wcap.a-tov{color:var(--dim)}
+.lbx-head{display:flex;justify-content:space-between;align-items:center;font-size:12.5px;font-weight:700;color:var(--dim);padding:4px 6px;margin-top:6px}
+.lbx-head.mine{color:var(--led)}
+.lbx-head .lbx-sc{font-family:Menlo,monospace;font-size:16px;color:var(--ink);font-weight:700}
+.lbx-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:8px;background:#0b0c10}
+table.lbx{border-collapse:collapse;width:100%;font-family:Menlo,monospace;font-size:11px}
+.lbx th{font-weight:400;font-size:9.5px;color:var(--dim);padding:4px 5px;text-align:center;border-bottom:1px solid var(--line);white-space:nowrap}
+.lbx td{padding:3px 5px;text-align:center;color:var(--ink);white-space:nowrap;border-bottom:1px solid #181b22}
+.lbx th.bx-nh{text-align:left}
+.lbx td.bx-name{text-align:left}
+.lbx .bx-av,.lbx .bx-n{display:inline-block;vertical-align:middle}
+.lbx .bx-av{margin-right:5px}
+.lbx .bx-n{font-family:inherit;font-size:11px}
+.lbx .bx-pos{font-size:8px;color:var(--dim);margin-left:3px}
+.lbx .bx-dot{width:5px;height:5px;border-radius:50%;background:var(--led);display:inline-block;margin-right:3px;vertical-align:middle}
+.lbx .bx-pts{font-weight:700;color:var(--led)}
+.lbx tbody tr{transition:background .3s}
+.lbx tbody tr.fl{background:rgba(217,142,63,.16)}
+.wline{display:flex;gap:8px;align-items:baseline;font-size:12px;padding:3px 2px;border-bottom:1px solid #181b22;animation:wfade .25s ease-out}
+@keyframes wfade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+.wline .wt{flex-shrink:0;width:56px;font-family:Menlo,monospace;font-size:10px;color:var(--dim)}
+.wline .wx{flex:1;color:var(--ink)}
+.wline .ws{flex-shrink:0;font-family:Menlo,monospace;font-size:10px;color:var(--dim)}
+.wline.l-m3 .wx{color:var(--led);font-weight:700}
+.wline.l-m2 .wx{color:var(--good)}
+.wline.l-blk .wx{color:#c79bff;font-weight:600}
+.wline.l-stl .wx{color:var(--blue);font-weight:600}
+.wline.l-miss .wx,.wline.l-tov .wx{color:var(--dim)}
+.wline.mine{background:rgba(217,142,63,.07);border-radius:4px}
+.watchctl{display:flex;gap:6px;margin-bottom:8px}
+.watchctl .btn{flex:1}
 .slot-dots{display:flex;justify-content:center;gap:10px;margin-top:8px}
 .slot-dots span{width:10px;height:10px;border-radius:50%;background:var(--panel2);border:1px solid var(--line)}
 .slot-dots span.done{background:var(--maple);border-color:var(--maple)}
@@ -610,6 +693,8 @@ function nextSlot(t){
 /* ============ 比賽模擬 ============ */
 /* ============ 逐球模擬引擎（玩家比賽用，AI 比賽用快速版） ============ */
 const THREE_P={PG:0.40,SG:0.42,SF:0.36,PF:0.26,C:0.12};
+const FOUL_P=0.055; // 每次出手被犯規的機率（產生罰球）
+function ftPct(p){return Math.max(0.55,Math.min(0.92,0.74+(((p&&p.ovr)||75)-75)*0.004));} // 罰球命中率（依 OVR 微調）
 function wpick(ws){let s=0;for(const w of ws)s+=w;if(s<=0)return 0;let r=Math.random()*s;for(let i=0;i<ws.length;i++){r-=ws[i];if(r<=0)return i;}return ws.length-1;}
 // 防守對位（預設）：雙方先發各依「位置順序」排好，依序對位 → C對C、F對F、G對G。之後玩家可手動互換
 function matchupPairs(offSt,defSt){
@@ -635,7 +720,7 @@ function engRoster(team,isMe){
     const start=i<st.length;
     const mw=(start?1.0:0.5)*(0.55+eff(p)/130);                                // 上場時間權重
     return {p,start,mw,uw:Math.pow(Math.max(1,p.pts),0.78)*(0.5+mw),           // 使用率：場均得分為底（次方<1 避免單人壟斷球權）
-            pts:0,reb:0,ast:0,stl:0,blk:0,fgm:0,fga:0};
+            pts:0,reb:0,ast:0,stl:0,blk:0,fgm:0,fga:0,t3m:0,t3a:0,ftm:0,fta:0,tov:0,pf:0};
   });
   const byId={};players.forEach(x=>byId[x.p.id]=x);
   return {starters,players,byId};
@@ -648,31 +733,44 @@ function possession(O,D){
   const defW=D.byId[defS.id]||D.players[0];
   const dDef=defS.drtg||60, dStl=defS.stl||0.8, dBlk=defS.blk||0.5;
   const shN=sh.p.name.split(' ').pop(), dN=defW.p.name.split(' ').pop();
+  const oid=sh.p.id, did=defS.id; // 出手者/防守者 id
   // 失誤（含抄截）
   const tovP=Math.max(0.05,Math.min(0.20,0.11+(dStl-1)*0.015));
-  if(Math.random()<tovP){if(Math.random()<dStl/(dStl+2.2)){defW.stl++;return {pts:0,ev:{k:'stl',t:dN+' 抄截 '+shN}};}return {pts:0};}
-  sh.fga++;
+  if(Math.random()<tovP){sh.tov++;if(Math.random()<dStl/(dStl+2.2)){defW.stl++;return {pts:0,ev:{k:'stl',oid,did,t:dN+' 抄截 '+shN,d:{o:oid,tov:1,stl:did}}};}return {pts:0,ev:{k:'tov',oid,did,t:shN+' 失誤，球權轉換',d:{o:oid,tov:1}}};}
+  const three=Math.random()<(THREE_P[sh.p.pos]||0.30); // 出手型態（描述用，不影響命中率，維持原平衡）
   // 命中率：自身能力 − 對位防守修正（常數可調整節奏/比分；上限壓低避免球星刷高分）
   let makeP=0.48+(eff(sh.p)-80)*0.003+((sh.p.fg||47)-47)*0.003-(dDef-62)*0.0022;
   makeP=Math.max(0.39,Math.min(0.56,makeP)); // 地板拉高、防守影響壓縮 → 避免雪崩式懸殊
-  if(Math.random()<dBlk*0.025){defW.blk++;return {pts:0,ev:{k:'blk',t:dN+' 阻攻 '+shN+'！'}};}  // 被阻
+  if(Math.random()<dBlk*0.025){defW.blk++;sh.fga++;if(three)sh.t3a++;return {pts:0,ev:{k:'blk',oid,did,three,t:dN+' 阻攻 '+shN+'！',d:{o:oid,fga:1,t3a:three?1:0,blk:did}}};}  // 被阻
+  const fouled=Math.random()<FOUL_P; // 出手時被犯規
   if(Math.random()<makeP){
-    const three=Math.random()<(THREE_P[sh.p.pos]||0.30),val=three?3:2;
-    sh.fgm++;sh.pts+=val;
-    if(Math.random()<0.55){const aw=O.players.map(x=>x===sh?0:Math.max(0.2,x.p.ast));O.players[wpick(aw)].ast++;}
-    return {pts:val,ev:{k:three?'m3':'m2',off:true,t:shN+(three?' 三分命中 +3':' 進球 +'+val)}};
+    const val=three?3:2;
+    sh.fga++;sh.fgm++;sh.pts+=val;if(three){sh.t3a++;sh.t3m++;}
+    const d={o:oid,fga:1,fgm:1,t3a:three?1:0,t3m:three?1:0,pts:val};
+    let astTxt='';
+    if(!fouled&&Math.random()<0.55){const aw=O.players.map(x=>x===sh?0:Math.max(0.2,x.p.ast));const a=O.players[wpick(aw)];a.ast++;astTxt='（'+a.p.name.split(' ').pop()+' 助攻）';d.ast=a.p.id;}
+    let oneTxt='';
+    if(fouled){sh.fta++;const m=Math.random()<ftPct(sh.p)?1:0;sh.ftm+=m;sh.pts+=m;defW.pf++;d.fta=1;d.ftm=m;d.pts+=m;d.pf=did;oneTxt=' 加罰'+(m?'命中！':'不進');}
+    return {pts:val+(d.ftm||0),ev:{k:three?'m3':'m2',off:true,oid,did,three,t:shN+(three?' 三分命中 +3':' 進球 +'+val)+astTxt+oneTxt,d}};
   }
-  // 失手／被阻 → 搶籃板
-  if(Math.random()<0.27)O.players[wpick(O.players.map(x=>x.p.reb*0.6))].reb++;   // 進攻籃板（簡化：不補籃）
-  else D.players[wpick(D.players.map(x=>x.p.reb*1.0))].reb++;
-  return {pts:0};
+  // 投失：若被犯規 → 罰球（不計 FGA）；否則搶籃板
+  if(fouled){
+    const n=three?3:2;let m=0;for(let i=0;i<n;i++)if(Math.random()<ftPct(sh.p))m++;
+    sh.fta+=n;sh.ftm+=m;sh.pts+=m;defW.pf++;
+    return {pts:m,ev:{k:'ft',oid,did,t:shN+' 製造犯規（'+dN+'），罰球 '+m+'/'+n+' 中',d:{o:oid,fta:n,ftm:m,pts:m,pf:did}}};
+  }
+  sh.fga++;if(three)sh.t3a++;
+  let rebTxt,rebId;
+  if(Math.random()<0.27){const rb=O.players[wpick(O.players.map(x=>x.p.reb*0.6))];rb.reb++;rebId=rb.p.id;rebTxt='，'+rb.p.name.split(' ').pop()+' 搶進攻籃板';}   // 進攻籃板（簡化：不補籃）
+  else{const rb=D.players[wpick(D.players.map(x=>x.p.reb*1.0))];rb.reb++;rebId=rb.p.id;rebTxt='，'+rb.p.name.split(' ').pop()+' 防守籃板';}
+  return {pts:0,ev:{k:'miss',oid,did,three,t:shN+(three?' 三分不進':' 出手不進')+rebTxt,d:{o:oid,fga:1,t3a:three?1:0,reb:rebId}}};
 }
 function simGameDetailed(ta,tb,meIdx){
   const A=engRoster(ta,meIdx===0), B=engRoster(tb,meIdx===1);
   // 對位：玩家那一隊防守時，套用手動指派（對手進攻方向用 useMine）
   A.defMap=buildDefMap(A,B,meIdx===1);B.defMap=buildDefMap(B,A,meIdx===0);
   const nameA=ta.name||"A",nameB=tb.name||"B";
-  const qa=[],qb=[],evts=[],qsum=[];let sa=0,sb=0;const PQ=26;
+  const qa=[],qb=[],evts=[],qsum=[],pbp=[];let sa=0,sb=0;const PQ=26;
   const clk=(q,i)=>{const rem=12*(1-(i+1)/PQ);const mm=Math.floor(rem);return `Q${q+1} ${mm}:${String(Math.floor((rem-mm)*60)).padStart(2,'0')}`;};
   const add=(ev,side,q,i,c)=>{if(!ev)return;const clutch=(q===3&&i>=PQ-4);
     if(ev.k==='m3'||ev.k==='blk'||ev.k==='stl'||(clutch&&ev.off))evts.push({c,t:'【'+side+'】'+ev.t,s:sa+'-'+sb,clutch});};
@@ -681,17 +779,20 @@ function simGameDetailed(ta,tb,meIdx){
     let x=0,y=0;
     for(let i=0;i<PQ;i++){const c=clk(q,i);
       const ra=possession(A,B);x+=ra.pts;sa+=ra.pts;add(ra.ev,nameA,q,i,c);
-      const rb=possession(B,A);y+=rb.pts;sb+=rb.pts;add(rb.ev,nameB,q,i,c);}
+      if(ra.ev)pbp.push({c,sd:'A',t:ra.ev.t,k:ra.ev.k,oid:ra.ev.oid,did:ra.ev.did,z:ra.ev.three?1:0,d:ra.ev.d,sa,sb});
+      const rb=possession(B,A);y+=rb.pts;sb+=rb.pts;add(rb.ev,nameB,q,i,c);
+      if(rb.ev)pbp.push({c,sd:'B',t:rb.ev.t,k:rb.ev.k,oid:rb.ev.oid,did:rb.ev.did,z:rb.ev.three?1:0,d:rb.ev.d,sa,sb});}
     qa.push(x);qb.push(y);
     const qtop=T=>{let b=null,bp=0;T.players.forEach(p=>{const d=p.pts-(st[p.p.id]||0);if(d>bp){bp=d;b=p;}});return b?b.p.name.split(' ').pop()+' '+bp+'分':'-';};
     qsum.push(`Q${q+1}　${nameA} ${x} : ${y} ${nameB}　本節最佳 ${qtop(A)}／${qtop(B)}`);
   }
-  let g=0;while(sa===sb&&g++<6){let x=0,y=0;for(let i=0;i<8;i++){const ra=possession(A,B);x+=ra.pts;sa+=ra.pts;const rb=possession(B,A);y+=rb.pts;sb+=rb.pts;}qa.push(x);qb.push(y);}
+  let g=0;while(sa===sb&&g++<6){let x=0,y=0;for(let i=0;i<8;i++){const c='OT '+(8-i);const ra=possession(A,B);x+=ra.pts;sa+=ra.pts;if(ra.ev)pbp.push({c,sd:'A',t:ra.ev.t,k:ra.ev.k,oid:ra.ev.oid,did:ra.ev.did,z:ra.ev.three?1:0,d:ra.ev.d,sa,sb});const rb=possession(B,A);y+=rb.pts;sb+=rb.pts;if(rb.ev)pbp.push({c,sd:'B',t:rb.ev.t,k:rb.ev.k,oid:rb.ev.oid,did:rb.ev.did,z:rb.ev.three?1:0,d:rb.ev.d,sa,sb});}qa.push(x);qb.push(y);}
   // 精華太多 → 保留 clutch、其餘平均抽樣到 ~22 條
   let hi=evts;
   if(evts.length>22){const keep=evts.filter(e=>e.clutch),rest=evts.filter(e=>!e.clutch),step=Math.max(1,Math.ceil(rest.length/Math.max(1,22-keep.length))),samp=rest.filter((_,k)=>k%step===0);hi=evts.filter(e=>keep.indexOf(e)>=0||samp.indexOf(e)>=0);}
   const mkBox=T=>T.players.map(x=>({n:x.p.name,pos:x.p.pos,ovr:x.p.ovr,start:x.start,
     min:x.start?ri(30,38):ri(10,22),pts:x.pts,reb:x.reb,ast:x.ast,stl:x.stl,blk:x.blk,
+    fgm:x.fgm,fga:x.fga,t3m:x.t3m,t3a:x.t3a,ftm:x.ftm,fta:x.fta,tov:x.tov,pf:x.pf,
     fg:x.fga?+(x.fgm/x.fga*100).toFixed(1):0})).sort((a,b)=>b.pts-a.pts);
   // 本場防守對位：玩家方防守者 → 守 → 對手（依對手位置排序）
   const oppR=meIdx===0?B:A, myR=meIdx===0?A:B; // oppR.defMap 把對手出手者對到我方防守者
@@ -700,7 +801,8 @@ function simGameDetailed(ta,tb,meIdx){
     return {oppN:op.name.split(' ').pop(),oppPos:op.pos,oppOvr:op.ovr,
             meN:d?d.name.split(' ').pop():'-',mePos:d?d.pos:'',meDr:d?(d.drtg||'-'):''};
   });
-  return {sa,sb,qa,qb,boxA:mkBox(A),boxB:mkBox(B),evts:hi,qsum,matchup,myName:myR.name};
+  const lineOf=R=>R.players.map(x=>({id:x.p.id,n:x.p.name.split(' ').pop(),pos:x.p.pos,pid:x.p.pid||0,ovr:x.p.ovr,st:x.start}));
+  return {sa,sb,qa,qb,boxA:mkBox(A),boxB:mkBox(B),evts:hi,qsum,matchup,myName:myR.name,pbp,nA:nameA,nB:nameB,myIsA:meIdx===0,lineA:lineOf(A),lineB:lineOf(B)};
 }
 function simGame(ta,tb,meIdx){
   const pa=power(ta,meIdx===0)||50,pb=power(tb,meIdx===1)||50;
@@ -729,13 +831,15 @@ function box(team,isMe,total){
   }).sort((a,b)=>b.pts-a.pts);
 }
 function applyFatigueInjury(team,isMe,win){
-  const{st,bench}=lineupOf(team,isMe);
+  const{st,bench}=lineupOf(team,isMe);const injured=[];
   [...st,...bench].forEach((p,i)=>{
     p.sta=Math.max(0,p.sta-(i<5?15:8));
     p.form=Math.max(-8,Math.min(8,(p.form||0)+(win?0.25:-0.25)));
     if(Math.random()<0.018){p.inj=ri(3,10);p.form=Math.max(-8,(p.form||0)-2);
+      injured.push({name:p.name,games:p.inj,team:team.name||"",isMe});
       if(isMe){S.log.unshift({type:"inj",t:Date.now(),msg:p.name+" 受傷，預計缺席 "+p.inj+" 場"});}}
   });
+  return injured;
 }
 function recoverAll(){
   const all=[S.roster,...S.ai.map(t=>t.roster),S.fa];
@@ -776,6 +880,8 @@ function quickWin(A,B){
   for(let q=0;q<4;q++){sa+=Math.max(12,23+(pa-80)*0.45+rnd(-6,6));sb+=Math.max(12,23+(pb-80)*0.45+rnd(-6,6));}
   return sa===sb?Math.random()<0.5:sa>sb;
 }
+// 只在最近 3 場保留逐球紀錄（pbp），舊的清掉避免存檔膨脹
+function trimPbp(){(S.gameHist||[]).forEach((r,i)=>{if(i>=3&&r.g&&r.g.pbp)r.g.pbp=null;});}
 function playRegularRound(){
   const rd=S.schedule[S.round%S.schedule.length];
   rd.forEach(([a,b])=>{
@@ -785,12 +891,12 @@ function playRegularRound(){
       if(b===0&&!legalMe()){addL(0);addW(a);S.log.unshift({type:"forfeit",t:Date.now(),msg:"陣容不足或超帽，本場棄賽判負 vs "+A.name});return;}
       const g=simGameDetailed(A,B,a===0?0:1); // 玩家比賽 → 逐球引擎
       if(g.sa>g.sb){addW(a);addL(b);}else{addW(b);addL(a);}
-      applyFatigueInjury(A,a===0,g.sa>g.sb);applyFatigueInjury(B,b===0,g.sb>g.sa);
+      g.injuries=[...applyFatigueInjury(A,a===0,g.sa>g.sb),...applyFatigueInjury(B,b===0,g.sb>g.sa)];
       const me=a===0,win=me?g.sa>g.sb:g.sb>g.sa;
       const rec={a:A.name,b:B.name,g,meA:me,when:S.nextAt,label:"例行賽 第"+(S.w+S.l+1)+"場",win,
                  my:me?g.sa:g.sb,op:me?g.sb:g.sa,opp:me?B.name:A.name};
       S.lastGame=rec;
-      S.gameHist.unshift(rec);S.gameHist=S.gameHist.slice(0,40);
+      S.gameHist.unshift(rec);S.gameHist=S.gameHist.slice(0,40);trimPbp();
       S.log.unshift({type:"game",t:S.nextAt,win,my:rec.my,op:rec.op,opp:rec.opp,label:(S.w+S.l)+"場"});
     }else{
       const A=teamOf(a),B=teamOf(b);
@@ -838,12 +944,12 @@ function playSeriesGame(s,roundLabel){
   const g=simGameDetailed(A,B,s.a===0?0:1);
   if(g.sa>g.sb)s.wa++;else s.wb++;
   s.hist.push({sa:g.sa,sb:g.sb});
-  applyFatigueInjury(A,s.a===0,g.sa>g.sb);applyFatigueInjury(B,s.b===0,g.sb>g.sa);
+  g.injuries=[...applyFatigueInjury(A,s.a===0,g.sa>g.sb),...applyFatigueInjury(B,s.b===0,g.sb>g.sa)];
   if(s.a===0||s.b===0){
     const me=s.a===0,win=me?g.sa>g.sb:g.sb>g.sa;
     const rec={a:A.name,b:B.name,g,meA:me,when:S.nextAt,label:"季後賽 "+roundLabel,win,
                my:me?g.sa:g.sb,op:me?g.sb:g.sa,opp:me?B.name:A.name};
-    S.lastGame=rec;S.gameHist.unshift(rec);S.gameHist=S.gameHist.slice(0,40);
+    S.lastGame=rec;S.gameHist.unshift(rec);S.gameHist=S.gameHist.slice(0,40);trimPbp();
     S.log.unshift({type:"game",t:S.nextAt,win,my:rec.my,op:rec.op,opp:rec.opp,label:roundLabel});
   }
 }
@@ -1417,19 +1523,68 @@ function vSched(){
   return h;
 }
 /* --- 詳細數據彈窗 --- */
+// 賽後快報：依比分與數據自動生成多行新聞（同一場固定、不同場有變化）
+function genRecap(L){
+  const g=L.g,sa=g.sa,sb=g.sb,winA=sa>=sb,wN=winA?L.a:L.b,lN=winA?L.b:L.a;
+  const ws=Math.max(sa,sb),ls=Math.min(sa,sb),mg=ws-ls,ot=(g.qa&&g.qa.length>4);
+  const wBox=winA?g.boxA:g.boxB,lBox=winA?g.boxB:g.boxA;
+  const sh=n=>(n||'').split(' ').pop();
+  const sorted=b=>(b||[]).slice().sort((x,y)=>y.pts-x.pts);
+  const wTop=sorted(wBox),lTop=sorted(lBox);
+  const wt=wTop[0]||{n:'-',pts:0,reb:0,ast:0,stl:0,blk:0},lt=lTop[0]||{n:'-',pts:0};
+  let seed=(((L.when||0)/1000|0)+sa*131+sb*17+(wt.pts||0)*7+(lt.pts||0)*3)>>>0;
+  const rng=()=>{seed=(seed+0x6D2B79F5)>>>0;let t=Math.imul(seed^(seed>>>15),1|seed);t=(t+Math.imul(t^(t>>>7),61|t))^t;return ((t^(t>>>14))>>>0)/4294967296;};
+  const pick=a=>a[Math.floor(rng()*a.length)];
+  const ddN=p=>[p.pts>=10,p.reb>=10,p.ast>=10].filter(Boolean).length;
+  const all=(g.boxA||[]).concat(g.boxB||[]);
+  const trip=all.find(p=>p.pts>=10&&p.reb>=10&&p.ast>=10);
+  const lines=[];
+  // 標題
+  const verb=mg>=28?pick(['血洗','痛宰','屠殺']):mg>=18?pick(['輕取','大勝','狂掃']):mg>=9?pick(['擊敗','力克','擊退']):pick(['險勝','驚險擊退','頑強守住戰勝']);
+  lines.push(`${wN} ${ws}-${ls}${ot?'（延長賽）':''} ${verb} ${lN}`);
+  // 主將／大三元
+  if(trip&&trip.pts===wt.pts){
+    lines.push(`${sh(wt.n)} ${pick(['無所不能','一人宰制全場','打出 MVP 級表現'])}，寫下 ${wt.pts} 分 ${wt.reb} 籃板 ${wt.ast} 助攻的大三元！`);
+  }else{
+    const ex=[];if(wt.reb>=6)ex.push(wt.reb+' 籃板');if(wt.ast>=5)ex.push(wt.ast+' 助攻');if(wt.stl>=3)ex.push(wt.stl+' 抄截');if(wt.blk>=3)ex.push(wt.blk+' 阻攻');
+    let s2=`${sh(wt.n)} ${pick(['火力全開','手感火燙','獨挑大樑','全場最佳'])}，攻下全隊最高 ${wt.pts} 分`;
+    if(ex.length)s2+='，外帶 '+ex.slice(0,2).join('、');
+    s2+=ddN(wt)>=2?pick(['，繳出大號兩雙。','，打出全能身手。']):pick(['，是贏球頭號功臣。','，扛起球隊進攻。']);
+    lines.push(s2);
+    if(trip&&trip!==wt)lines.push(`${sh(trip.n)} 更猛刷 ${trip.pts} 分 ${trip.reb} 籃板 ${trip.ast} 助攻寫下大三元！`);
+  }
+  // 先發上雙人數／第二得分手
+  const dblW=(wBox||[]).filter(b=>b.start&&b.pts>=10).length;
+  if(dblW>=3)lines.push(`${wN} 先發有 ${dblW} 人得分上雙，${pick(['多點開花讓對手難以招架。','火力全面開花。','板凳主力齊發揮。'])}`);
+  else if(wTop[1]&&wTop[1].pts>=15)lines.push(`${sh(wTop[1].n)} 也挹注 ${wTop[1].pts} 分${wTop[1].ast>=5?'、'+wTop[1].ast+' 助攻':''}火力支援。`);
+  // 三分熱手
+  const hot=all.filter(p=>p.t3m>=4).sort((a,b)=>b.t3m-a.t3m)[0];
+  if(hot&&rng()<0.85)lines.push(`${sh(hot.n)} 外線手感發燙，單場命中 ${hot.t3m} 記三分。`);
+  // 關鍵球（接近比分時，從精華挑一顆 clutch 進球）
+  if(mg<=8&&g.evts&&g.evts.length){const cl=g.evts.filter(e=>e.clutch&&/命中|進球|\+/.test(e.t));if(cl.length)lines.push(`${pick(['關鍵時刻','讀秒階段','勝負關頭'])}，${pick(cl).t.replace(/^【.*?】/,'')}，一擊定生死。`);}
+  // 敗方
+  lines.push(mg<=5?pick([`${lN} 鏖戰到最後一刻，${sh(lt.n)} 獨拿 ${lt.pts} 分仍功虧一簣。`,`${lN} 雖緊咬比分，${sh(lt.n)} 的 ${lt.pts} 分難挽敗局。`])
+                  :pick([`${lN} 雖有 ${sh(lt.n)} 的 ${lt.pts} 分苦撐，火力仍不敵對手。`,`${lN} 全隊表現低迷，${sh(lt.n)} 的 ${lt.pts} 分孤掌難鳴。`]));
+  // 傷兵
+  if(g.injuries&&g.injuries.length){const ij=g.injuries[0];lines.push(`美中不足的是，${sh(ij.name)} 本場受傷下場，預計缺席 ${ij.games} 場，${pick(['後續調度恐受影響。','球隊戰力將受考驗。'])}`);}
+  return lines.join('\n');
+}
 function showBoxscore(idx){
   const L=(S.gameHist||[])[idx];if(!L)return;
   const g=L.g;
   const sided=(name,boxArr,mine)=>{
     const lead=Math.max(...boxArr.map(b=>b.pts)); // 該隊得分王
+    const fgC=b=>b.fgm!=null?b.fgm+'-'+b.fga:(b.fg||0)+'%';
+    const t3C=b=>b.t3m!=null?b.t3m+'-'+b.t3a:'-';
+    const ftC=b=>b.ftm!=null?b.ftm+'-'+b.fta:'-';
     const rows=boxArr.map(b=>`<tr>
-      <td style="text-align:left;padding-left:2px">${b.start?"<span style='color:var(--led)'>●</span> ":"　"}<span style="color:${ovrColor(b.ovr)};font-weight:600">${b.n}</span>${b.pts===lead&&lead>0?" <span style='color:var(--led);font-size:10px'>🏀得分王</span>":""}<span style="color:var(--dim);font-size:10px"> ${b.pos}</span></td>
-      <td>${b.min}</td><td style="font-weight:700;color:var(--ink)">${b.pts}</td><td>${b.reb}</td><td>${b.ast}</td><td>${b.stl}</td><td>${b.blk}</td><td>${b.fg}</td>
+      <td style="text-align:left;padding-left:2px">${b.start?"<span style='color:var(--led)'>●</span> ":"　"}<span style="color:${ovrColor(b.ovr)};font-weight:600">${b.n}</span>${b.pts===lead&&lead>0?" <span style='color:var(--led);font-size:10px'>🏀</span>":""}<span style="color:var(--dim);font-size:10px"> ${b.pos}</span></td>
+      <td>${b.min}</td><td style="font-weight:700;color:var(--ink)">${b.pts}</td><td>${b.reb}</td><td>${b.ast}</td><td>${fgC(b)}</td><td>${t3C(b)}</td><td>${ftC(b)}</td><td>${b.stl}</td><td>${b.blk}</td><td>${b.tov!=null?b.tov:'-'}</td><td>${b.pf!=null?b.pf:'-'}</td>
     </tr>`).join("");
     return `<div class="card" style="padding:8px 6px;border-color:${mine?"var(--maple-deep)":"var(--line)"}">
       <div class="muted" style="margin-bottom:4px;font-weight:700;color:${mine?"var(--led)":"var(--dim)"}">${name}${mine?"（我隊）":""}</div>
-      <table class="boxtbl"><thead><tr><th style="text-align:left">球員</th><th>分鐘</th><th>得分</th><th>籃板</th><th>助攻</th><th>抄截</th><th>火鍋</th><th>命中%</th></tr></thead>
-      <tbody>${rows}</tbody></table></div>`;
+      <div class="lbx-wrap"><table class="boxtbl"><thead><tr><th style="text-align:left">球員</th><th>分</th><th>得</th><th>籃</th><th>助</th><th>投</th><th>三分</th><th>罰</th><th>抄</th><th>帽</th><th>失</th><th>犯</th></tr></thead>
+      <tbody>${rows}</tbody></table></div></div>`;
   };
   const bg=document.createElement("div");bg.className="modal-bg";
   bg.innerHTML=`<div class="modal">
@@ -1446,16 +1601,121 @@ function showBoxscore(idx){
         <tr><td style="font-size:10px">${L.b.slice(0,4)}</td>${g.qb.map(q=>`<td>${q}</td>`).join("")}<td style="color:var(--ink)">${g.sb}</td></tr>
       </table></div>
     </div>
+    <div class="card" style="border-color:var(--maple);padding:9px 11px"><div class="muted" style="font-weight:700;color:var(--led);margin-bottom:5px">📰 賽後快報</div><div style="font-size:12.5px;line-height:1.75;white-space:pre-line">${genRecap(L)}</div></div>
     ${sided(L.a,g.boxA,L.meA)}
     ${sided(L.b,g.boxB,!L.meA)}
     <div class="muted" style="font-size:11px;text-align:center;margin:4px 0">● = 先發　數據為單場模擬結果</div>
     ${g.matchup&&g.matchup.length?`<div class="card" style="padding:8px 10px"><div class="muted" style="font-weight:700;color:var(--led);margin-bottom:4px">🛡 本場防守對位（你的防守者 守 對手）</div>${g.matchup.map(m=>`<div class="flex" style="gap:6px;align-items:center;font-size:12px;padding:3px 0;border-bottom:1px solid var(--line)"><span style="flex:1;text-align:left;font-weight:600">${m.meN}<span class="muted" style="font-size:9px"> ${m.mePos}・防${m.meDr}</span></span><span style="color:var(--maple);font-size:11px">守</span><span style="flex:1;text-align:right;font-weight:600">${m.oppN}<span class="muted" style="font-size:9px"> ${m.oppPos}・OVR${m.oppOvr}</span></span></div>`).join("")}</div>`:""}
     ${g.qsum&&g.qsum.length?`<div class="card" style="padding:8px 10px"><div class="muted" style="font-weight:700;color:var(--led);margin-bottom:4px">📊 逐節摘要</div>${g.qsum.map(s=>`<div style="font-size:12px;padding:3px 0;border-bottom:1px solid var(--line)">${s}</div>`).join("")}</div>`:""}
     ${g.evts&&g.evts.length?`<div class="card" style="padding:8px 10px"><div class="muted" style="font-weight:700;color:var(--led);margin-bottom:4px">🎬 比賽精華</div>${g.evts.map(e=>`<div style="font-size:12px;padding:3px 0;display:flex;gap:8px;align-items:baseline"><span class="muted" style="width:60px;flex-shrink:0;font-family:Menlo,monospace;font-size:10px">${e.c}</span><span style="flex:1">${e.t}</span><span class="muted" style="font-family:Menlo,monospace;font-size:10px">${e.s}</span></div>`).join("")}</div>`:""}
+    ${g.pbp&&g.pbp.length?`<button class="btn block" data-act="watch" style="background:#1b2a1f;color:var(--good);border:1px solid #2e5a3a;margin-bottom:6px">▶ 觀戰重播（逐球播報）</button>`:""}
     <button class="btn block" data-act="closemodal">關閉</button>
   </div>`;
-  bg.addEventListener("click",e=>{if(e.target===bg||e.target.dataset.act==="closemodal")bg.remove();});
+  bg.addEventListener("click",e=>{
+    if(e.target.dataset.act==="watch"){bg.remove();watchGame(idx);return;}
+    if(e.target===bg||e.target.dataset.act==="closemodal")bg.remove();
+  });
   document.body.appendChild(bg);
+}
+/* --- 觀戰重播：場上對戰圖示＋動作動畫＋逐球播報 --- */
+const WACT={
+  m3:{ic:'🎯',label:'三分命中',cls:'a-make'},
+  m2:{ic:'🏀',label:'進球',cls:'a-make'},
+  miss:{ic:'🧱',label:'打鐵',cls:'a-miss'},
+  blk:{ic:'🚫',label:'阻攻',cls:'a-blk'},
+  stl:{ic:'🖐',label:'抄截',cls:'a-stl'},
+  tov:{ic:'🔄',label:'失誤',cls:'a-tov'},
+  ft:{ic:'🏀',label:'罰球',cls:'a-make'}
+};
+function wAv(p,sz){
+  if(!p)return "";
+  const ph=`<div class="av-ph" style="width:${sz}px;height:${sz}px;font-size:${Math.round(sz*0.42)}px">${(p.n||'?')[0]}</div>`;
+  return p.pid?`<div class="av-wrap" style="width:${sz}px;height:${sz}px">${ph}<img src="https://cdn.nba.com/headshots/nba/latest/260x190/${p.pid}.png" style="width:${sz}px;height:${sz}px;border-radius:50%;object-fit:cover;object-position:center top;position:absolute;left:0;top:0" onerror="this.style.display='none'"></div>`:ph;
+}
+// 進攻五人站位（PG,SG,SF,PF,C 依序）與籃框位置（百分比座標）
+const WSPOTS=[[50,16],[83,34],[17,34],[31,58],[69,60]];
+const WHOOP=[50,85];
+function wDefPos(o){return [o[0]+(50-o[0])*0.16, o[1]+(WHOOP[1]-o[1])*0.18];} // 防守者站在人與籃框之間
+function watchGame(idx){
+  const L=(S.gameHist||[])[idx];
+  if(!L||!L.g||!L.g.pbp||!L.g.pbp.length){toast("這場沒有可重播的逐球紀錄");return;}
+  const g=L.g,pbp=g.pbp,nA=g.nA||L.a,nB=g.nB||L.b,myIsA=g.myIsA;
+  const order=arr=>(arr||[]).slice().sort((a,b)=>(b.st?1:0)-(a.st?1:0)||(POS_NUM[a.pos]||3)-(POS_NUM[b.pos]||3));
+  const LA=order(g.lineA),LB=order(g.lineB);
+  const stat={};[...LA,...LB].forEach(p=>stat[p.id]={pts:0,reb:0,ast:0,fgm:0,fga:0,t3m:0,t3a:0,ftm:0,fta:0,stl:0,blk:0,tov:0,pf:0});
+  const speeds=[{label:"1x",ms:360},{label:"2x",ms:180},{label:"0.5x",ms:720}];
+  let pos=0,timer=null,playing=true,si=0;
+  const hdr=`<tr><th class="bx-nh">球員</th><th>得</th><th>籃</th><th>助</th><th>投</th><th>三分</th><th>罰</th><th>抄</th><th>帽</th><th>失</th><th>犯</th></tr>`;
+  const rowH=p=>`<tr data-id="${p.id}"><td class="bx-name"><span class="bx-av">${wAv({pid:p.pid,n:p.n},20)}</span><span class="bx-n">${p.st?'<i class="bx-dot"></i>':''}${p.n}<span class="bx-pos">${p.pos}</span></span></td><td class="bx-pts">0</td><td>0</td><td>0</td><td>0-0</td><td>0-0</td><td>0-0</td><td>0</td><td>0</td><td>0</td><td>0</td></tr>`;
+  const tbl=(name,list,mine,scId)=>`<div class="lbx-head ${mine?'mine':''}">${mine?'★ ':''}${name}<span class="lbx-sc" id="${scId}">0</span></div>
+    <div class="lbx-wrap"><table class="lbx"><thead>${hdr}</thead><tbody>${list.map(rowH).join("")}</tbody></table></div>`;
+  const bg=document.createElement("div");bg.className="modal-bg";
+  bg.innerHTML=`<div class="modal">
+    <div class="scoreboard" style="margin-bottom:8px">
+      <div class="sb-name" style="text-align:center;margin-bottom:6px" id="wq">Q1 12:00</div>
+      <div class="sb-teams">
+        <div class="sb-team"><div class="sb-name" style="color:${myIsA?'var(--led)':'var(--ink)'}">${myIsA?'★':''}${nA}</div><div class="sb-score" id="wsa">0</div></div>
+        <div class="sb-vs" style="color:var(--good)">● LIVE</div>
+        <div class="sb-team"><div class="sb-name" style="color:${!myIsA?'var(--led)':'var(--ink)'}">${!myIsA?'★':''}${nB}</div><div class="sb-score" id="wsb">0</div></div>
+      </div>
+    </div>
+    <div class="wcap" id="wcap">點擊播放，數據即時累計</div>
+    ${tbl(nA,LA,myIsA,'lscA')}
+    ${tbl(nB,LB,!myIsA,'lscB')}
+    <div id="wlog" class="watchlog short"></div>
+    <div class="watchctl">
+      <button class="btn sm" data-w="play">⏸ 暫停</button>
+      <button class="btn sm" data-w="speed">速度 1x</button>
+      <button class="btn sm" data-w="skip">⏭ 跳結尾</button>
+    </div>
+    <button class="btn block" data-w="close">關閉</button>
+  </div>`;
+  document.body.appendChild(bg);
+  const qEl=bg.querySelector("#wq"),saEl=bg.querySelector("#wsa"),sbEl=bg.querySelector("#wsb"),lscA=bg.querySelector("#lscA"),lscB=bg.querySelector("#lscB"),logEl=bg.querySelector("#wlog"),cap=bg.querySelector("#wcap"),playBtn=bg.querySelector('[data-w="play"]');
+  const trById={};bg.querySelectorAll(".lbx tbody tr").forEach(tr=>trById[tr.dataset.id]=tr);
+  function paintRow(id){const tr=trById[id];if(!tr)return;const s=stat[id],c=tr.children;c[1].textContent=s.pts;c[2].textContent=s.reb;c[3].textContent=s.ast;c[4].textContent=s.fgm+'-'+s.fga;c[5].textContent=s.t3m+'-'+s.t3a;c[6].textContent=s.ftm+'-'+s.fta;c[7].textContent=s.stl;c[8].textContent=s.blk;c[9].textContent=s.tov;c[10].textContent=s.pf;}
+  function applyD(d){if(!d)return;const o=stat[d.o];if(o){if(d.fga)o.fga+=d.fga;if(d.fgm)o.fgm+=d.fgm;if(d.t3a)o.t3a+=d.t3a;if(d.t3m)o.t3m+=d.t3m;if(d.fta)o.fta+=d.fta;if(d.ftm)o.ftm+=d.ftm;if(d.pts)o.pts+=d.pts;if(d.tov)o.tov+=d.tov;}if(d.ast&&stat[d.ast])stat[d.ast].ast++;if(d.reb&&stat[d.reb])stat[d.reb].reb++;if(d.stl&&stat[d.stl])stat[d.stl].stl++;if(d.blk&&stat[d.blk])stat[d.blk].blk++;if(d.pf&&stat[d.pf])stat[d.pf].pf++;}
+  function reconD(e){const d={o:e.oid},three=!!e.z; // 舊紀錄回推：得分/出手可還原，籃板/助攻無法
+    if(e.k==='m3'){d.fga=1;d.fgm=1;d.t3a=1;d.t3m=1;d.pts=3;}
+    else if(e.k==='m2'){d.fga=1;d.fgm=1;d.pts=2;}
+    else if(e.k==='miss'){d.fga=1;if(three)d.t3a=1;}
+    else if(e.k==='blk'){d.fga=1;if(three)d.t3a=1;d.blk=e.did;}
+    else if(e.k==='stl'){d.tov=1;d.stl=e.did;}
+    else if(e.k==='tov'){d.tov=1;}
+    return d;}
+  function flash(ids){bg.querySelectorAll(".lbx tbody tr.fl").forEach(t=>t.classList.remove("fl"));ids.forEach(id=>{const tr=trById[id];if(tr)tr.classList.add("fl");});}
+  function step(){
+    if(pos>=pbp.length){stop();playing=false;playBtn.textContent="↻ 重新播放";return;}
+    const e=pbp[pos++];
+    qEl.textContent=e.c;saEl.textContent=e.sa;sbEl.textContent=e.sb;lscA.textContent=e.sa;lscB.textContent=e.sb;
+    const d=e.d||reconD(e); // 舊紀錄沒有逐球統計 → 從事件種類回推
+    applyD(d);
+    const ids=[];if(d){if(d.o)ids.push(d.o);if(d.ast)ids.push(d.ast);if(d.reb)ids.push(d.reb);if(d.stl)ids.push(d.stl);if(d.blk)ids.push(d.blk);}
+    ids.forEach(paintRow);
+    flash(d&&d.o?[d.o]:[]);
+    const A=WACT[e.k]||WACT.miss;cap.className="wcap "+A.cls;cap.textContent=A.ic+" "+e.t;
+    const mine=(e.sd==='A')===myIsA;
+    const cls=e.k==='m3'?'l-m3':e.k==='m2'?'l-m2':e.k==='blk'?'l-blk':e.k==='stl'?'l-stl':e.k==='tov'?'l-tov':e.k==='ft'?'l-m2':'l-miss';
+    const row=document.createElement("div");row.className='wline '+cls+(mine?' mine':'');
+    row.innerHTML=`<span class="wt">${e.c}</span><span class="wx">${e.t}</span><span class="ws">${e.sa}-${e.sb}</span>`;
+    logEl.appendChild(row);logEl.scrollTop=logEl.scrollHeight;
+    while(logEl.children.length>40)logEl.removeChild(logEl.firstChild);
+  }
+  function start(){stop();timer=setInterval(step,speeds[si].ms);}
+  function stop(){if(timer){clearInterval(timer);timer=null;}}
+  start();
+  bg.addEventListener("click",ev=>{
+    const w=ev.target.dataset.w;
+    if(!w){if(ev.target===bg){stop();bg.remove();}return;}
+    if(w==='close'){stop();bg.remove();}
+    else if(w==='play'){
+      if(pos>=pbp.length){pos=0;logEl.innerHTML='';[...LA,...LB].forEach(p=>{Object.keys(stat[p.id]).forEach(k=>stat[p.id][k]=0);paintRow(p.id);});playing=true;playBtn.textContent="⏸ 暫停";start();}
+      else if(playing){playing=false;stop();playBtn.textContent="▶ 繼續";}
+      else{playing=true;start();playBtn.textContent="⏸ 暫停";}
+    }
+    else if(w==='speed'){si=(si+1)%speeds.length;ev.target.textContent="速度 "+speeds[si].label;if(playing)start();}
+    else if(w==='skip'){stop();while(pos<pbp.length)step();playing=false;playBtn.textContent="↻ 重新播放";}
+  });
 }
 /* --- 聯盟 --- */
 function vLeague(){

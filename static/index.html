@@ -676,7 +676,7 @@ function nextSlot(t){
 /* ============ 比賽模擬 ============ */
 /* ============ 逐球模擬引擎（玩家比賽用，AI 比賽用快速版） ============ */
 const THREE_P={PG:0.40,SG:0.42,SF:0.36,PF:0.26,C:0.12};
-const FOUL_P=0.055; // 每次出手被犯規的機率（產生罰球）
+const FOUL_P=0.06; // 每次出手被犯規的基準機率（再乘上球員造犯規傾向）
 function ftPct(p){return Math.max(0.55,Math.min(0.92,0.74+(((p&&p.ovr)||75)-75)*0.004));} // 罰球命中率（依 OVR 微調）
 function wpick(ws){let s=0;for(const w of ws)s+=w;if(s<=0)return 0;let r=Math.random()*s;for(let i=0;i<ws.length;i++){r-=ws[i];if(r<=0)return i;}return ws.length-1;}
 // 防守對位（預設）：雙方先發各依「位置順序」排好，依序對位 → C對C、F對F、G對G。之後玩家可手動互換
@@ -725,7 +725,7 @@ function possession(O,D){
   let makeP=0.48+(eff(sh.p)-80)*0.003+((sh.p.fg||47)-47)*0.003-(dDef-62)*0.0022;
   makeP=Math.max(0.39,Math.min(0.56,makeP)); // 地板拉高、防守影響壓縮 → 避免雪崩式懸殊
   if(Math.random()<dBlk*0.025){defW.blk++;sh.fga++;if(three)sh.t3a++;return {pts:0,ev:{k:'blk',oid,did,three,t:dN+' 阻攻 '+shN+'！',d:{o:oid,fga:1,t3a:three?1:0,blk:did}}};}  // 被阻
-  const fouled=Math.random()<FOUL_P*(sh.p.ftr!=null?Math.max(0.4,Math.min(2.4,sh.p.ftr/0.25)):1); // 出手時被犯規：依球員造犯規傾向縮放（聯盟均值約 0.25）
+  const fouled=Math.random()<FOUL_P*(sh.p.ftr!=null?Math.max(0.35,Math.min(3.6,Math.pow(sh.p.ftr/0.22,1.4))):1); // 出手被犯規：依造犯規傾向縮放，拉大差距讓 SGA 這類球員明顯更常上罰球線
   if(Math.random()<makeP){
     const val=three?3:2;
     sh.fga++;sh.fgm++;sh.pts+=val;if(three){sh.t3a++;sh.t3m++;}

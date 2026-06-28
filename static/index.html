@@ -359,7 +359,7 @@ function posOK(pos,slotIdx){return Math.abs((POS_NUM[pos]||3)-(slotIdx+1))<=1;} 
 const rnd=(a,b)=>a+Math.random()*(b-a);
 const ri=(a,b)=>Math.floor(rnd(a,b+1));
 function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
-function mkPlayer(arr,i){const ovr=(arr[10]!=null?arr[10]:calcOvr(arr));return{id:"p"+i,name:arr[0],pos:arr[1],pts:arr[2],reb:arr[3],ast:arr[4],stl:arr[5],blk:arr[6],fg:arr[7],sal:arr[8],team:arr[9]||"",ovr,drtg:arr[11]!=null?arr[11]:60,pid:arr[12]||0,sta:100,inj:0,yrs:ri(1,3),pot:0,form:0,mv:0,mvH:[]};}
+function mkPlayer(arr,i){const ovr=(arr[10]!=null?arr[10]:calcOvr(arr));return{id:"p"+i,name:arr[0],pos:arr[1],pts:arr[2],reb:arr[3],ast:arr[4],stl:arr[5],blk:arr[6],fg:arr[7],sal:arr[8],team:arr[9]||"",ovr,drtg:arr[11]!=null?arr[11]:60,pid:arr[12]||0,t3r:arr[13]!=null?arr[13]:null,ftr:arr[14]!=null?arr[14]:null,sta:100,inj:0,yrs:ri(1,3),pot:0,form:0,mv:0,mvH:[]};}
 // NBA 官方頭像 CDN（依球員 id）。虛構/角色球員沒有 id → 不顯示
 function headshot(p){return p&&p.pid?`https://cdn.nba.com/headshots/nba/latest/260x190/${p.pid}.png`:"";}
 function avatarHTML(p,size){const u=headshot(p);return u?`<img src="${u}" loading="lazy" style="width:${size}px;height:${size}px;border-radius:50%;object-fit:cover;object-position:center top;background:var(--panel2);flex-shrink:0" onerror="this.style.display='none'">`:"";}
@@ -523,7 +523,7 @@ function clonePlayer(src){
   const ovr=(src[10]!=null?src[10]:calcOvr(src));
   return {id:"c"+Date.now().toString(36)+Math.floor(Math.random()*1e9).toString(36),
     name:src[0],pos:src[1],pts:src[2],reb:src[3],ast:src[4],stl:src[5],blk:src[6],fg:src[7],
-    sal:src[8],team:src[9]||"",ovr,drtg:src[11]!=null?src[11]:60,pid:src[12]||0,sta:100,inj:0,yrs:0,pot:0,form:0,mv:0,mvH:[]};
+    sal:src[8],team:src[9]||"",ovr,drtg:src[11]!=null?src[11]:60,pid:src[12]||0,t3r:src[13]!=null?src[13]:null,ftr:src[14]!=null?src[14]:null,sta:100,inj:0,yrs:0,pot:0,form:0,mv:0,mvH:[]};
 }
 /* 選秀（球星市場）：每天刷新 4 次、每次 10 名真實球員，開價隨身價浮動 → 可挖便宜大咖 */
 function rollDraftOffers(){
@@ -720,12 +720,12 @@ function possession(O,D){
   // 失誤（含抄截）
   const tovP=Math.max(0.05,Math.min(0.20,0.11+(dStl-1)*0.015));
   if(Math.random()<tovP){sh.tov++;if(Math.random()<dStl/(dStl+2.2)){defW.stl++;return {pts:0,ev:{k:'stl',oid,did,t:dN+' 抄截 '+shN,d:{o:oid,tov:1,stl:did}}};}return {pts:0,ev:{k:'tov',oid,did,t:shN+' 失誤，球權轉換',d:{o:oid,tov:1}}};}
-  const three=Math.random()<(THREE_P[sh.p.pos]||0.30); // 出手型態（描述用，不影響命中率，維持原平衡）
+  const three=Math.random()<(sh.p.t3r!=null?Math.max(0.02,Math.min(0.85,sh.p.t3r)):(THREE_P[sh.p.pos]||0.30)); // 出手型態：優先用球員個人三分傾向，無資料才用位置預設
   // 命中率：自身能力 − 對位防守修正（常數可調整節奏/比分；上限壓低避免球星刷高分）
   let makeP=0.48+(eff(sh.p)-80)*0.003+((sh.p.fg||47)-47)*0.003-(dDef-62)*0.0022;
   makeP=Math.max(0.39,Math.min(0.56,makeP)); // 地板拉高、防守影響壓縮 → 避免雪崩式懸殊
   if(Math.random()<dBlk*0.025){defW.blk++;sh.fga++;if(three)sh.t3a++;return {pts:0,ev:{k:'blk',oid,did,three,t:dN+' 阻攻 '+shN+'！',d:{o:oid,fga:1,t3a:three?1:0,blk:did}}};}  // 被阻
-  const fouled=Math.random()<FOUL_P; // 出手時被犯規
+  const fouled=Math.random()<FOUL_P*(sh.p.ftr!=null?Math.max(0.4,Math.min(2.4,sh.p.ftr/0.25)):1); // 出手時被犯規：依球員造犯規傾向縮放（聯盟均值約 0.25）
   if(Math.random()<makeP){
     const val=three?3:2;
     sh.fga++;sh.fgm++;sh.pts+=val;if(three){sh.t3a++;sh.t3m++;}
@@ -1150,7 +1150,7 @@ async function load(){try{const r=await window.storage.get("nba_gm_idle");if(r&&
     const _byName={};DB.forEach(r=>{_byName[r[0]]=r;});
     const _fix=p=>{if(!p)return;const r=_byName[p.name];
       if(r){p.pts=r[2];p.reb=r[3];p.ast=r[4];p.stl=r[5];p.blk=r[6];p.fg=r[7];
-        if(r[1])p.pos=r[1];if(r[10]!=null)p.ovr=r[10];if(r[11]!=null)p.drtg=r[11];if(r[12])p.pid=r[12];if(!p.team)p.team=r[9]||"";}
+        if(r[1])p.pos=r[1];if(r[10]!=null)p.ovr=r[10];if(r[11]!=null)p.drtg=r[11];if(r[12])p.pid=r[12];if(r[13]!=null)p.t3r=r[13];if(r[14]!=null)p.ftr=r[14];if(!p.team)p.team=r[9]||"";}
       if(p.drtg==null)p.drtg=60;};
     allPlayers().forEach(_fix);
     if(S.draft&&S.draft.pool)S.draft.pool.forEach(_fix);

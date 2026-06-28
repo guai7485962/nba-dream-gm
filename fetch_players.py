@@ -340,6 +340,11 @@ def main():
         stl = round(r.get("STL", 0), 1)
         blk = round(r.get("BLK", 0), 1)
         fg  = round(r.get("FG_PCT", 0) * 100, 1)
+        fga  = r.get("FGA", 0) or 0
+        fg3a = r.get("FG3A", 0) or 0
+        fta  = r.get("FTA", 0) or 0
+        t3r = round(fg3a / fga, 3) if fga > 0 else 0      # 三分出手佔比（投不投三分的傾向）
+        ftr = round(fta / fga, 3) if fga > 0 else 0       # 罰球出手 / 投籃出手（造犯規上罰球線的傾向）
         pid  = r["PLAYER_ID"]
         adv  = adv_map.get(pid) or {}
         pie  = adv.get("pie")
@@ -351,6 +356,7 @@ def main():
             "pos":    resolve_position(pid, pos_map, r),
             "pts": pts, "reb": reb, "ast": ast,
             "stl": stl, "blk": blk, "fg":  fg,
+            "t3r": t3r, "ftr": ftr,
             "pie": round((pie * 100 if (pie is not None and pie < 1.5) else (pie or 0)), 1),
             "def_rating": round(dr, 1),
             "def_rtg": defense_rating(dr, blk, stl),

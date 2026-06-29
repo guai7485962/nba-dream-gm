@@ -163,9 +163,9 @@ table.lbx{border-collapse:collapse;width:100%;font-family:Menlo,monospace;font-s
 .boxline{display:flex;justify-content:space-between;font-size:13px;padding:5px 2px;border-bottom:1px dashed #262a34}
 .boxline:last-child{border:none}
 .boxline .bn{font-weight:600} .boxline .bs{font-family:Menlo,monospace;color:var(--dim)}
-.boxtbl{width:100%;border-collapse:collapse;font-size:12px}
-.boxtbl th{font-weight:400;font-size:10px;color:var(--dim);padding:3px 2px;text-align:center;border-bottom:1px solid var(--line)}
-.boxtbl td{text-align:center;padding:4px 2px;color:var(--dim);font-family:Menlo,monospace;border-bottom:1px solid #21252e}
+.boxtbl{width:max-content;min-width:100%;border-collapse:collapse;font-size:11.5px}
+.boxtbl th{font-weight:400;font-size:10px;color:var(--dim);padding:3px 6px;text-align:center;border-bottom:1px solid var(--line);white-space:nowrap}
+.boxtbl td{text-align:center;padding:4px 6px;color:var(--dim);font-family:Menlo,monospace;border-bottom:1px solid #21252e;white-space:nowrap}
 .boxtbl tbody tr:last-child td{border-bottom:none}
 .boxtbl td:first-child{font-family:inherit;color:var(--ink)}
 .tbasket{display:flex;align-items:center;gap:8px}
@@ -695,98 +695,73 @@ function buildDefMap(O,D,useMine){
   }
   return m;
 }
-function engRoster(team,isMe){
-  const{st,bench}=lineupOf(team,isMe);
-  const starters=[...st].sort((a,b)=>(POS_NUM[a.pos]||3)-(POS_NUM[b.pos]||3)); // 位置排序，對位用
-  const rot=[...st,...bench.slice(0,4)];                                       // 出場輪換
-  const players=rot.map((p,i)=>{
-    const start=i<st.length;
-    const mw=(start?1.0:0.5)*(0.55+eff(p)/130);                                // 上場時間權重
-    return {p,start,mw,uw:Math.pow(Math.max(1,p.pts),0.78)*(0.5+mw),           // 使用率：場均得分為底（次方<1 避免單人壟斷球權）
-            pts:0,reb:0,ast:0,stl:0,blk:0,fgm:0,fga:0,t3m:0,t3a:0,ftm:0,fta:0,tov:0,pf:0};
-  });
-  const byId={};players.forEach(x=>byId[x.p.id]=x);
-  return {starters,players,byId};
-}
-function possession(O,D){
-  const sh=O.players[wpick(O.players.map(x=>x.uw))];                // 出手者
-  // 對位防守者：先發用就近配對表；板凳出手者用最接近位置的防守者
-  let defS=O.defMap&&O.defMap[sh.p.id];
-  if(!defS){const pn=POS_NUM[sh.p.pos]||3;defS=D.starters.slice().sort((a,b)=>Math.abs((POS_NUM[a.pos]||3)-pn)-Math.abs((POS_NUM[b.pos]||3)-pn))[0]||D.starters[0];}
-  const defW=D.byId[defS.id]||D.players[0];
-  const dDef=defS.drtg||60, dStl=defS.stl||0.8, dBlk=defS.blk||0.5;
-  const shN=sh.p.name.split(' ').pop(), dN=defW.p.name.split(' ').pop();
-  const oid=sh.p.id, did=defS.id; // 出手者/防守者 id
-  // 失誤（含抄截）
-  const tovP=Math.max(0.05,Math.min(0.20,0.11+(dStl-1)*0.015));
-  if(Math.random()<tovP){sh.tov++;if(Math.random()<dStl/(dStl+2.2)){defW.stl++;return {pts:0,ev:{k:'stl',oid,did,t:dN+' 抄截 '+shN,d:{o:oid,tov:1,stl:did}}};}return {pts:0,ev:{k:'tov',oid,did,t:shN+' 失誤，球權轉換',d:{o:oid,tov:1}}};}
-  const three=Math.random()<(sh.p.t3r!=null?Math.max(0.02,Math.min(0.85,sh.p.t3r)):(THREE_P[sh.p.pos]||0.30)); // 出手型態：優先用球員個人三分傾向，無資料才用位置預設
-  // 命中率：自身能力 − 對位防守修正（常數可調整節奏/比分；上限壓低避免球星刷高分）
-  let makeP=0.48+(eff(sh.p)-80)*0.003+((sh.p.fg||47)-47)*0.003-(dDef-62)*0.0022;
-  makeP=Math.max(0.39,Math.min(0.56,makeP)); // 地板拉高、防守影響壓縮 → 避免雪崩式懸殊
-  if(Math.random()<dBlk*0.025){defW.blk++;sh.fga++;if(three)sh.t3a++;return {pts:0,ev:{k:'blk',oid,did,three,t:dN+' 阻攻 '+shN+'！',d:{o:oid,fga:1,t3a:three?1:0,blk:did}}};}  // 被阻
-  const fouled=Math.random()<FOUL_P*(sh.p.ftr!=null?Math.max(0.35,Math.min(3.6,Math.pow(sh.p.ftr/0.22,1.4))):1); // 出手被犯規：依造犯規傾向縮放，拉大差距讓 SGA 這類球員明顯更常上罰球線
-  if(Math.random()<makeP){
-    const val=three?3:2;
-    sh.fga++;sh.fgm++;sh.pts+=val;if(three){sh.t3a++;sh.t3m++;}
-    const d={o:oid,fga:1,fgm:1,t3a:three?1:0,t3m:three?1:0,pts:val};
-    let astTxt='';
-    if(!fouled&&Math.random()<0.55){const aw=O.players.map(x=>x===sh?0:Math.max(0.2,x.p.ast));const a=O.players[wpick(aw)];a.ast++;astTxt='（'+a.p.name.split(' ').pop()+' 助攻）';d.ast=a.p.id;}
-    let oneTxt='';
-    if(fouled){sh.fta++;const m=Math.random()<ftPct(sh.p)?1:0;sh.ftm+=m;sh.pts+=m;defW.pf++;d.fta=1;d.ftm=m;d.pts+=m;d.pf=did;oneTxt=' 加罰'+(m?'命中！':'不進');}
-    return {pts:val+(d.ftm||0),ev:{k:three?'m3':'m2',off:true,oid,did,three,t:shN+(three?' 三分命中 +3':' 進球 +'+val)+astTxt+oneTxt,d}};
-  }
-  // 投失：若被犯規 → 罰球（不計 FGA）；否則搶籃板
-  if(fouled){
-    const n=three?3:2;let m=0;for(let i=0;i<n;i++)if(Math.random()<ftPct(sh.p))m++;
-    sh.fta+=n;sh.ftm+=m;sh.pts+=m;defW.pf++;
-    return {pts:m,ev:{k:'ft',oid,did,t:shN+' 製造犯規（'+dN+'），罰球 '+m+'/'+n+' 中',d:{o:oid,fta:n,ftm:m,pts:m,pf:did}}};
-  }
-  sh.fga++;if(three)sh.t3a++;
-  let rebTxt,rebId;
-  if(Math.random()<0.27){const rb=O.players[wpick(O.players.map(x=>x.p.reb*0.6))];rb.reb++;rebId=rb.p.id;rebTxt='，'+rb.p.name.split(' ').pop()+' 搶進攻籃板';}   // 進攻籃板（簡化：不補籃）
-  else{const rb=D.players[wpick(D.players.map(x=>x.p.reb*1.0))];rb.reb++;rebId=rb.p.id;rebTxt='，'+rb.p.name.split(' ').pop()+' 防守籃板';}
-  return {pts:0,ev:{k:'miss',oid,did,three,t:shN+(three?' 三分不進':' 出手不進')+rebTxt,d:{o:oid,fga:1,t3a:three?1:0,reb:rebId}}};
-}
-function simGameDetailed(ta,tb,meIdx){
-  const A=engRoster(ta,meIdx===0), B=engRoster(tb,meIdx===1);
-  // 對位：玩家那一隊防守時，套用手動指派（對手進攻方向用 useMine）
-  A.defMap=buildDefMap(A,B,meIdx===1);B.defMap=buildDefMap(B,A,meIdx===0);
-  const nameA=ta.name||"A",nameB=tb.name||"B";
-  const qa=[],qb=[],evts=[],qsum=[],pbp=[];let sa=0,sb=0;const PQ=26;
-  const clk=(q,i)=>{const rem=12*(1-(i+1)/PQ);const mm=Math.floor(rem);return `Q${q+1} ${mm}:${String(Math.floor((rem-mm)*60)).padStart(2,'0')}`;};
-  const add=(ev,side,q,i,c)=>{if(!ev)return;const clutch=(q===3&&i>=PQ-4);
-    if(ev.k==='m3'||ev.k==='blk'||ev.k==='stl'||(clutch&&ev.off))evts.push({c,t:'【'+side+'】'+ev.t,s:sa+'-'+sb,clutch});};
-  for(let q=0;q<4;q++){
-    const st={};[...A.players,...B.players].forEach(x=>st[x.p.id]=x.pts);
-    let x=0,y=0;
-    for(let i=0;i<PQ;i++){const c=clk(q,i);
-      const ra=possession(A,B);x+=ra.pts;sa+=ra.pts;add(ra.ev,nameA,q,i,c);
-      if(ra.ev)pbp.push({c,sd:'A',t:ra.ev.t,k:ra.ev.k,oid:ra.ev.oid,did:ra.ev.did,z:ra.ev.three?1:0,d:ra.ev.d,sa,sb});
-      const rb=possession(B,A);y+=rb.pts;sb+=rb.pts;add(rb.ev,nameB,q,i,c);
-      if(rb.ev)pbp.push({c,sd:'B',t:rb.ev.t,k:rb.ev.k,oid:rb.ev.oid,did:rb.ev.did,z:rb.ev.three?1:0,d:rb.ev.d,sa,sb});}
-    qa.push(x);qb.push(y);
-    const qtop=T=>{let b=null,bp=0;T.players.forEach(p=>{const d=p.pts-(st[p.p.id]||0);if(d>bp){bp=d;b=p;}});return b?b.p.name.split(' ').pop()+' '+bp+'分':'-';};
-    qsum.push(`Q${q+1}　${nameA} ${x} : ${y} ${nameB}　本節最佳 ${qtop(A)}／${qtop(B)}`);
-  }
-  let g=0;while(sa===sb&&g++<6){let x=0,y=0;for(let i=0;i<8;i++){const c='OT '+(8-i);const ra=possession(A,B);x+=ra.pts;sa+=ra.pts;if(ra.ev)pbp.push({c,sd:'A',t:ra.ev.t,k:ra.ev.k,oid:ra.ev.oid,did:ra.ev.did,z:ra.ev.three?1:0,d:ra.ev.d,sa,sb});const rb=possession(B,A);y+=rb.pts;sb+=rb.pts;if(rb.ev)pbp.push({c,sd:'B',t:rb.ev.t,k:rb.ev.k,oid:rb.ev.oid,did:rb.ev.did,z:rb.ev.three?1:0,d:rb.ev.d,sa,sb});}qa.push(x);qb.push(y);}
-  // 精華太多 → 保留 clutch、其餘平均抽樣到 ~22 條
-  let hi=evts;
-  if(evts.length>22){const keep=evts.filter(e=>e.clutch),rest=evts.filter(e=>!e.clutch),step=Math.max(1,Math.ceil(rest.length/Math.max(1,22-keep.length))),samp=rest.filter((_,k)=>k%step===0);hi=evts.filter(e=>keep.indexOf(e)>=0||samp.indexOf(e)>=0);}
-  const mkBox=T=>T.players.map(x=>({n:x.p.name,pos:x.p.pos,ovr:x.p.ovr,start:x.start,
-    min:x.start?ri(30,38):ri(10,22),pts:x.pts,reb:x.reb,ast:x.ast,stl:x.stl,blk:x.blk,
-    fgm:x.fgm,fga:x.fga,t3m:x.t3m,t3a:x.t3a,ftm:x.ftm,fta:x.fta,tov:x.tov,pf:x.pf,
-    fg:x.fga?+(x.fgm/x.fga*100).toFixed(1):0})).sort((a,b)=>b.pts-a.pts);
-  // 本場防守對位：玩家方防守者 → 守 → 對手（依對手位置排序）
-  const oppR=meIdx===0?B:A, myR=meIdx===0?A:B; // oppR.defMap 把對手出手者對到我方防守者
-  const matchup=[...oppR.starters].sort((a,b)=>(POS_NUM[a.pos]||3)-(POS_NUM[b.pos]||3)).map(op=>{
-    const d=oppR.defMap[op.id];
-    return {oppN:op.name.split(' ').pop(),oppPos:op.pos,oppOvr:op.ovr,
-            meN:d?d.name.split(' ').pop():'-',mePos:d?d.pos:'',meDr:d?(d.drtg||'-'):''};
-  });
-  const lineOf=R=>R.players.map(x=>({id:x.p.id,n:x.p.name.split(' ').pop(),pos:x.p.pos,pid:x.p.pid||0,ovr:x.p.ovr,st:x.start}));
-  return {sa,sb,qa,qb,boxA:mkBox(A),boxB:mkBox(B),evts:hi,qsum,matchup,myName:myR.name,pbp,nA:nameA,nB:nameB,myIsA:meIdx===0,lineA:lineOf(A),lineB:lineOf(B)};
-}
+const HANDLE={PG:1.0,SG:0.85,SF:0.68,PF:0.52,C:0.42},SIZE={PG:0,SG:0.5,SF:1.5,PF:3,C:4.5};
+function effW(w){return (w.p.ovr+(w.p.form||0)*0.6)*(0.72+0.28*Math.max(0,w.sta)/100);}
+function usageW(w){return Math.pow(Math.max(1,w.p.pts),0.85)*(0.6+effW(w)/170);}
+function rebN(p){return (p.reb||3)+1;}
+const LnP=p=>p.name.split(' ').filter(x=>x!=='Jr'&&x!=='Jr.'&&x!=='II'&&x!=='III').pop();
+function engTeam(team,isMe,name){const{st,bench}=lineupOf(team,isMe);const all=[...st,...bench.slice(0,4)];
+  const players=all.map((p,i)=>({p,start:i<st.length,sta:Math.max(40,p.sta||100),pf:0,fld:false,secs:0,qp:0,pts:0,reb:0,ast:0,stl:0,blk:0,fgm:0,fga:0,t3m:0,t3a:0,ftm:0,fta:0,tov:0}));
+  const raw=[37,35,34,32,30,16,14,12,10],tot=players.reduce((s,_,i)=>s+(raw[i]||6),0);players.forEach((w,i)=>w.tmin=(raw[i]||6)*240/tot);
+  const starters=players.filter(w=>w.start).sort((a,b)=>(POS_NUM[a.p.pos]||3)-(POS_NUM[b.p.pos]||3));
+  return {name,isMe,players,live:starters.slice(0,5),qf:0};}
+function liveDefMap(O,D){const os=[...O.live].sort((a,b)=>(POS_NUM[a.p.pos]||3)-(POS_NUM[b.p.pos]||3)),ds=[...D.live].sort((a,b)=>(POS_NUM[a.p.pos]||3)-(POS_NUM[b.p.pos]||3)),m={};
+  os.forEach((o,i)=>{m[o.p.id]=ds[Math.min(i,ds.length-1)];});
+  if(D.isMe&&typeof S!=='undefined'&&S&&S.defByOpp){O.live.forEach(o=>{const did=S.defByOpp[o.p.id];if(did){const d=D.live.find(x=>x.p.id===did);if(d)m[o.p.id]=d;}});}return m;}
+function subBench(T,q,margin){T.live=T.live.filter(w=>{if(w.pf>=6)w.fld=true;return w.pf<6;});
+  const pace=w=>w.secs/(w.tmin*60+1),avail=()=>T.players.filter(w=>!w.fld&&!T.live.includes(w));
+  while(T.live.length<5){const a=avail().sort((x,y)=>pace(x)-pace(y));if(!a.length)break;T.live.push(a[0]);}
+  if(q>=4&&Math.abs(margin)<=13){T.players.filter(w=>w.start).forEach(s=>{if(!s.fld&&!T.live.includes(s)){const out=[...T.live].sort((a,b)=>T.players.indexOf(b)-T.players.indexOf(a))[0];if(out&&!out.start)T.live[T.live.indexOf(out)]=s;}});return;}
+  const over=[...T.live].sort((a,b)=>pace(b)-pace(a))[0],under=avail().sort((a,b)=>pace(a)-pace(b))[0];
+  if(over&&under&&pace(over)>pace(under)+0.06)T.live[T.live.indexOf(over)]=under;}
+function trip(O,D){const dmap=liveDefMap(O,D);
+  const h=[...O.live].sort((a,b)=>(HANDLE[b.p.pos]+b.p.ovr*0.004)-(HANDLE[a.p.pos]+a.p.ovr*0.004))[0],hD=dmap[h.p.id]||D.live[0];
+  if(Math.random()<0.10){const df=D.live[Math.floor(Math.random()*D.live.length)];df.pf++;D.qf=(D.qf||0)+1;
+    if(D.qf>4){let m=0;for(let i=0;i<2;i++)if(Math.random()<ftPct(h.p))m++;h.fta+=2;h.ftm+=m;h.pts+=m;h.qp+=m;return {pts:m,evs:[{k:'ft',oid:h.p.id,did:df.p.id,t:LnP(h.p)+' 團隊犯規兩罰中 '+m,d:{o:h.p.id,fta:2,ftm:m,pts:m,pf:df.p.id}}]};}}
+  if(Math.random()<Math.max(0.012,Math.min(0.12,0.055*((hD.p.stl||0.8)/1.2)/(HANDLE[h.p.pos]+h.p.ovr*0.004)))){hD.stl++;h.tov++;return {pts:0,evs:[{k:'stl',oid:h.p.id,did:hD.p.id,t:LnP(hD.p)+' 半場抄走 '+LnP(h.p),d:{o:h.p.id,tov:1,stl:hD.p.id}}]};}
+  const S2=O.live[wpick(O.live.map(usageW))],Dg=dmap[S2.p.id]||D.live[0];let passer=null;
+  if(Math.random()<0.70){const mates=O.live.filter(w=>w!==S2),pp=mates[wpick(mates.map(w=>Math.max(0.3,w.p.ast)))],pD=dmap[pp.p.id]||D.live[0];
+    if(Math.random()<Math.max(0.01,Math.min(0.11,0.045*((pD.p.stl||0.8)/1.2)))){pD.stl++;pp.tov++;return {pts:0,evs:[{k:'stl',oid:pp.p.id,did:pD.p.id,t:LnP(pD.p)+' 抄掉 '+LnP(pp.p)+' 的傳球',d:{o:pp.p.id,tov:1,stl:pD.p.id}}]};}passer=pp;}
+  if(Math.random()<0.075){S2.tov++;return {pts:0,evs:[{k:'tov',oid:S2.p.id,t:LnP(S2.p)+' 進攻失誤',d:{o:S2.p.id,tov:1}}]};}
+  const three=Math.random()<Math.max(0.02,Math.min(0.85,S2.p.t3r!=null?S2.p.t3r:(THREE_P[S2.p.pos]||0.3)));
+  const sw=three?'三分':(Math.random()<0.45?'中距離':(Math.random()<0.6?'切入':'跳投'));
+  if(Math.random()<Math.max(0,Math.min(0.20,(Dg.p.blk||0.5)*0.078*(three?0.4:1.2)))){Dg.blk++;S2.fga++;if(three)S2.t3a++;const rb=D.live[wpick(D.live.map(w=>rebN(w.p)))];rb.reb++;return {pts:0,evs:[{k:'blk',oid:S2.p.id,did:Dg.p.id,three,t:LnP(Dg.p)+' 火鍋蓋掉 '+LnP(S2.p)+'！',d:{o:S2.p.id,fga:1,t3a:three?1:0,blk:Dg.p.id,reb:rb.p.id}}]};}
+  const fouled=Math.random()<0.068*Math.max(0.35,Math.min(3.6,Math.pow((S2.p.ftr!=null?S2.p.ftr:0.22)/0.22,1.4)));
+  let mp=Math.max(0.28,Math.min(0.595,0.545+(effW(S2)-80)*0.0023+((S2.p.fg||47)-47)*0.003-((Dg.p.drtg||60)-62)*0.0022-(three?0.155:0)-Math.max(0,Math.min(0.17,(S2.pts-26)*0.007))));
+  if(Math.random()<mp){const val=three?3:2;S2.fga++;S2.fgm++;S2.pts+=val;S2.qp+=val;if(three){S2.t3a++;S2.t3m++;}
+    const d={o:S2.p.id,fga:1,fgm:1,t3a:three?1:0,t3m:three?1:0,pts:val};let tail='';
+    if(passer){passer.ast++;d.ast=passer.p.id;tail='（'+LnP(passer.p)+' 助攻）';}
+    if(fouled){S2.fta++;const fp=(Math.random()<0.35?D.live[Math.floor(Math.random()*D.live.length)]:Dg);fp.pf++;D.qf++;d.fta=1;d.pf=fp.p.id;let fm=0;if(Math.random()<ftPct(S2.p)){S2.ftm++;S2.pts++;S2.qp++;fm=1;}d.ftm=fm;d.pts+=fm;tail+=fm?('＋加罰('+(three?'4分打成':'2+1')+')'):'＋加罰落空';}
+    return {pts:d.pts,evs:[{k:three?'m3':'m2',off:true,oid:S2.p.id,did:Dg.p.id,three,t:LnP(S2.p)+' '+sw+(three?'命中':'命中 '+val+' 分')+tail,d}]};}
+  if(fouled){const n=three?3:2;let m=0;for(let i=0;i<n;i++)if(Math.random()<ftPct(S2.p))m++;S2.fta+=n;S2.ftm+=m;S2.pts+=m;S2.qp+=m;const fp=(Math.random()<0.35?D.live[Math.floor(Math.random()*D.live.length)]:Dg);fp.pf++;D.qf++;return {pts:m,evs:[{k:'ft',oid:S2.p.id,did:fp.p.id,t:LnP(S2.p)+' '+sw+'出手遭犯規，'+n+' 罰中 '+m,d:{o:S2.p.id,fta:n,ftm:m,pts:m,pf:fp.p.id}}]};}
+  S2.fga++;if(three)S2.t3a++;
+  if(Math.random()<0.22){const rb=O.live[wpick(O.live.map(w=>(w.p.reb||3)+0.5))];rb.reb++;const missEv={k:'miss',oid:S2.p.id,three,t:'',d:{o:S2.p.id,fga:1,t3a:three?1:0,reb:rb.p.id}};
+    if(Math.random()<0.52){rb.fga++;rb.fgm++;rb.pts+=2;rb.qp+=2;return {pts:2,evs:[missEv,{k:'m2',off:true,oid:rb.p.id,t:LnP(S2.p)+' '+sw+'不進，'+LnP(rb.p)+' 進攻籃板補進 2 分',d:{o:rb.p.id,fga:1,fgm:1,pts:2}}]};}
+    rb.fga++;const d2=D.live[wpick(D.live.map(w=>rebN(w.p)))];d2.reb++;return {pts:0,evs:[missEv,{k:'miss',oid:rb.p.id,t:'',d:{o:rb.p.id,fga:1,reb:d2.p.id}}]};}
+  let dd={o:S2.p.id,fga:1,t3a:three?1:0};if(Math.random()>0.13){const rb=D.live[wpick(D.live.map(w=>rebN(w.p)))];rb.reb++;dd.reb=rb.p.id;}
+  return {pts:0,evs:[{k:'miss',oid:S2.p.id,three,t:'',d:dd}]};}
+function simGameDetailed(ta,tb,meIdx){const A=engTeam(ta,meIdx===0,ta.name||'A'),B=engTeam(tb,meIdx===1,tb.name||'B'),nameA=A.name,nameB=B.name;
+  const qa=[],qb=[],evts=[],qsum=[],pbp=[];let sa=0,sb=0;const QP=26,dt=2880/(QP*2*4);
+  const tipS=T=>T.live.reduce((m,w)=>Math.max(m,w.p.ovr+(SIZE[w.p.pos]||0)*2),0);
+  let off=Math.random()<1/(1+Math.exp(-(tipS(A)-tipS(B))*0.15))?A:B;
+  pbp.push({c:'Q1 12:00',sd:off===A?'A':'B',k:'tip',t:'🏀 跳球：'+(off===A?nameA:nameB)+' 先取得球權',d:null,sa:0,sb:0});
+  const recover=()=>{A.players.concat(B.players).forEach(w=>{if(!A.live.includes(w)&&!B.live.includes(w))w.sta=Math.min(100,w.sta+2.2);});};
+  for(let q=0;q<4;q++){A.players.forEach(w=>w.qp=0);B.players.forEach(w=>w.qp=0);A.qf=0;B.qf=0;const qsA=sa,qsB=sb,total=QP*2;
+    for(let i=0;i<total;i++){const O=off,D=off===A?B:A,sd=O===A?'A':'B',r=trip(O,D);if(O===A)sa+=r.pts;else sb+=r.pts;
+      [...A.live,...B.live].forEach(w=>{w.secs+=dt;w.sta=Math.max(0,w.sta-0.42);});recover();
+      const rem=12*(1-(i+1)/total),mm=Math.floor(rem),ss=Math.floor((rem-mm)*60),c='Q'+(q+1)+' '+mm+':'+String(ss).padStart(2,'0'),clutch=(q===3&&i>=total-8);
+      r.evs.forEach(ev=>{if(ev.t&&(ev.k==='m3'||ev.k==='blk'||ev.k==='stl'||(clutch&&ev.off)))evts.push({c,t:'【'+(sd==='A'?nameA:nameB)+'】'+ev.t,s:sa+'-'+sb,clutch});pbp.push({c,sd,k:ev.k,oid:ev.oid,did:ev.did,z:ev.three?1:0,d:ev.d,t:ev.t||'',sa,sb});});
+      off=D;if(i%12===11){subBench(A,q+1,sa-sb);subBench(B,q+1,sb-sa);}}
+    qa.push(sa-qsA);qb.push(sb-qsB);
+    const qtop=T=>{const w=T.players.slice().sort((a,b)=>b.qp-a.qp)[0];return w&&w.qp>0?LnP(w.p)+' '+w.qp+' 分':'-';};
+    qsum.push('Q'+(q+1)+'　本節最佳：'+qtop(A)+'（'+nameA+'）／'+qtop(B)+'（'+nameB+'）');}
+  let gd=0;while(sa===sb&&gd++<6){const qsA=sa,qsB=sb;for(let i=0;i<16;i++){const O=off,D=off===A?B:A,sd=O===A?'A':'B',r=trip(O,D);if(O===A)sa+=r.pts;else sb+=r.pts;[...A.live,...B.live].forEach(w=>{w.secs+=dt;});r.evs.forEach(ev=>pbp.push({c:'OT',sd,k:ev.k,oid:ev.oid,did:ev.did,z:ev.three?1:0,d:ev.d,t:ev.t||'',sa,sb}));off=D;}qa.push(sa-qsA);qb.push(sb-qsB);}
+  let hi=evts;if(evts.length>22){const keep=evts.filter(e=>e.clutch),rest=evts.filter(e=>!e.clutch),step=Math.max(1,Math.ceil(rest.length/Math.max(1,22-keep.length)));hi=evts.filter(e=>e.clutch||rest.indexOf(e)%step===0);}
+  const mkBox=T=>T.players.map(w=>({n:w.p.name,pos:w.p.pos,ovr:w.p.ovr,start:w.start,min:Math.round(w.secs/60),pts:w.pts,reb:w.reb,ast:w.ast,stl:w.stl,blk:w.blk,fgm:w.fgm,fga:w.fga,t3m:w.t3m,t3a:w.t3a,ftm:w.ftm,fta:w.fta,tov:w.tov,pf:w.pf,fg:w.fga?+(w.fgm/w.fga*100).toFixed(1):0})).filter(b=>b.min>0).sort((a,b)=>b.pts-a.pts);
+  const oppR=meIdx===0?B:A,myR=meIdx===0?A:B,sortSt=T=>T.players.filter(w=>w.start).sort((a,b)=>(POS_NUM[a.p.pos]||3)-(POS_NUM[b.p.pos]||3)),oppSt=sortSt(oppR),mySt=sortSt(myR);
+  const matchup=oppSt.map((op,i)=>{const d=mySt[Math.min(i,mySt.length-1)];return {oppN:LnP(op.p),oppPos:op.p.pos,oppOvr:op.p.ovr,meN:d?LnP(d.p):'-',mePos:d?d.p.pos:'',meDr:d?(d.p.drtg||'-'):''};});
+  const lineOf=T=>T.players.map(w=>({id:w.p.id,n:LnP(w.p),pos:w.p.pos,pid:w.p.pid||0,ovr:w.p.ovr,st:w.start}));
+  return {sa,sb,qa,qb,boxA:mkBox(A),boxB:mkBox(B),evts:hi,qsum,matchup,myName:myR.name,pbp,nA:nameA,nB:nameB,myIsA:meIdx===0,lineA:lineOf(A),lineB:lineOf(B)};}
 function simGame(ta,tb,meIdx){
   const pa=power(ta,meIdx===0)||50,pb=power(tb,meIdx===1)||50;
   const qa=[],qb=[];let sa=0,sb=0;
@@ -1510,47 +1485,50 @@ function vSched(){
 function genRecap(L){
   const g=L.g,sa=g.sa,sb=g.sb,winA=sa>=sb,wN=winA?L.a:L.b,lN=winA?L.b:L.a;
   const ws=Math.max(sa,sb),ls=Math.min(sa,sb),mg=ws-ls,ot=(g.qa&&g.qa.length>4);
-  const wBox=winA?g.boxA:g.boxB,lBox=winA?g.boxB:g.boxA;
-  const sh=n=>(n||'').split(' ').pop();
-  const sorted=b=>(b||[]).slice().sort((x,y)=>y.pts-x.pts);
-  const wTop=sorted(wBox),lTop=sorted(lBox);
-  const wt=wTop[0]||{n:'-',pts:0,reb:0,ast:0,stl:0,blk:0},lt=lTop[0]||{n:'-',pts:0};
-  let seed=(((L.when||0)/1000|0)+sa*131+sb*17+(wt.pts||0)*7+(lt.pts||0)*3)>>>0;
-  const rng=()=>{seed=(seed+0x6D2B79F5)>>>0;let t=Math.imul(seed^(seed>>>15),1|seed);t=(t+Math.imul(t^(t>>>7),61|t))^t;return ((t^(t>>>14))>>>0)/4294967296;};
+  const wB=winA?g.boxA:g.boxB,lB=winA?g.boxB:g.boxA;
+  const sh=n=>(n||'').split(' ').filter(x=>x!=='Jr'&&x!=='Jr.'&&x!=='II'&&x!=='III').pop();
+  const srt=b=>(b||[]).slice().sort((x,y)=>y.pts-x.pts);
+  const wT=srt(wB),lT=srt(lB),wt=wT[0]||{n:'-',pts:0,reb:0,ast:0,stl:0,blk:0},lt=lT[0]||{n:'-',pts:0};
+  let sd=(((L.when||0)/1000|0)+sa*131+sb*17+(wt.pts*7)+(lt.pts*3))>>>0;
+  const rng=()=>{sd=(sd+0x6D2B79F5)>>>0;let t=Math.imul(sd^(sd>>>15),1|sd);t=(t+Math.imul(t^(t>>>7),61|t))^t;return((t^(t>>>14))>>>0)/4294967296;};
   const pick=a=>a[Math.floor(rng()*a.length)];
-  const ddN=p=>[p.pts>=10,p.reb>=10,p.ast>=10].filter(Boolean).length;
+  const dd=p=>[p.pts>=10,p.reb>=10,p.ast>=10].filter(Boolean).length;
   const all=(g.boxA||[]).concat(g.boxB||[]);
   const trip=all.find(p=>p.pts>=10&&p.reb>=10&&p.ast>=10);
-  const lines=[];
-  // 標題
-  const verb=mg>=28?pick(['血洗','痛宰','屠殺']):mg>=18?pick(['輕取','大勝','狂掃']):mg>=9?pick(['擊敗','力克','擊退']):pick(['險勝','驚險擊退','頑強守住戰勝']);
-  lines.push(`${wN} ${ws}-${ls}${ot?'（延長賽）':''} ${verb} ${lN}`);
-  // 主將／大三元
-  if(trip&&trip.pts===wt.pts){
-    lines.push(`${sh(wt.n)} ${pick(['無所不能','一人宰制全場','打出 MVP 級表現'])}，寫下 ${wt.pts} 分 ${wt.reb} 籃板 ${wt.ast} 助攻的大三元！`);
-  }else{
-    const ex=[];if(wt.reb>=6)ex.push(wt.reb+' 籃板');if(wt.ast>=5)ex.push(wt.ast+' 助攻');if(wt.stl>=3)ex.push(wt.stl+' 抄截');if(wt.blk>=3)ex.push(wt.blk+' 阻攻');
-    let s2=`${sh(wt.n)} ${pick(['火力全開','手感火燙','獨挑大樑','全場最佳'])}，攻下全隊最高 ${wt.pts} 分`;
-    if(ex.length)s2+='，外帶 '+ex.slice(0,2).join('、');
-    s2+=ddN(wt)>=2?pick(['，繳出大號兩雙。','，打出全能身手。']):pick(['，是贏球頭號功臣。','，扛起球隊進攻。']);
-    lines.push(s2);
-    if(trip&&trip!==wt)lines.push(`${sh(trip.n)} 更猛刷 ${trip.pts} 分 ${trip.reb} 籃板 ${trip.ast} 助攻寫下大三元！`);
-  }
-  // 先發上雙人數／第二得分手
-  const dblW=(wBox||[]).filter(b=>b.start&&b.pts>=10).length;
-  if(dblW>=3)lines.push(`${wN} 先發有 ${dblW} 人得分上雙，${pick(['多點開花讓對手難以招架。','火力全面開花。','板凳主力齊發揮。'])}`);
-  else if(wTop[1]&&wTop[1].pts>=15)lines.push(`${sh(wTop[1].n)} 也挹注 ${wTop[1].pts} 分${wTop[1].ast>=5?'、'+wTop[1].ast+' 助攻':''}火力支援。`);
-  // 三分熱手
-  const hot=all.filter(p=>p.t3m>=4).sort((a,b)=>b.t3m-a.t3m)[0];
-  if(hot&&rng()<0.85)lines.push(`${sh(hot.n)} 外線手感發燙，單場命中 ${hot.t3m} 記三分。`);
-  // 關鍵球（接近比分時，從精華挑一顆 clutch 進球）
-  if(mg<=8&&g.evts&&g.evts.length){const cl=g.evts.filter(e=>e.clutch&&/命中|進球|\+/.test(e.t));if(cl.length)lines.push(`${pick(['關鍵時刻','讀秒階段','勝負關頭'])}，${pick(cl).t.replace(/^【.*?】/,'')}，一擊定生死。`);}
-  // 敗方
-  lines.push(mg<=5?pick([`${lN} 鏖戰到最後一刻，${sh(lt.n)} 獨拿 ${lt.pts} 分仍功虧一簣。`,`${lN} 雖緊咬比分，${sh(lt.n)} 的 ${lt.pts} 分難挽敗局。`])
-                  :pick([`${lN} 雖有 ${sh(lt.n)} 的 ${lt.pts} 分苦撐，火力仍不敵對手。`,`${lN} 全隊表現低迷，${sh(lt.n)} 的 ${lt.pts} 分孤掌難鳴。`]));
-  // 傷兵
-  if(g.injuries&&g.injuries.length){const ij=g.injuries[0];lines.push(`美中不足的是，${sh(ij.name)} 本場受傷下場，預計缺席 ${ij.games} 場，${pick(['後續調度恐受影響。','球隊戰力將受考驗。'])}`);}
-  return lines.join('\n');
+  const cum=(arr,n)=>(arr||[]).slice(0,n).reduce((s,x)=>s+x,0);
+  const wq=winA?g.qa:g.qb,lq=winA?g.qb:g.qa;
+  const verb=mg>=25?pick(['痛宰','血洗','屠殺','海放']):mg>=15?pick(['輕取','大勝','狂掃','輾壓']):mg>=8?pick(['擊敗','力克','擊退','收拾']):pick(['險勝','驚險擊退','力克','頂住反撲擊退']);
+  const out=[pick([`${wN} ${ws}-${ls}${ot?'（延長賽）':''} ${verb} ${lN}`,`終場 ${wN} ${ws}：${ls} ${lN}${ot?'，鏖戰一個延長':''}，${pick(['收下勝利','笑納勝果','贏球'])}`,`${wN} 以 ${ws}-${ls} ${verb} ${lN}`])];
+  const starLine=()=>{const ex=[];if(wt.reb>=7)ex.push(wt.reb+' 籃板');if(wt.ast>=6)ex.push(wt.ast+' 助攻');if(wt.stl>=3)ex.push(wt.stl+' 抄截');if(wt.blk>=3)ex.push(wt.blk+' 阻攻');
+    if(wt.pts>=40)return pick([`${sh(wt.n)} 殺紅了眼狂砍 ${wt.pts} 分`,`${sh(wt.n)} 手感燙到發燒獨取 ${wt.pts} 分`,`${sh(wt.n)} 一夫當關轟下 ${wt.pts} 分`])+(ex.length?'、'+ex.slice(0,2).join('、'):'')+'。';
+    return pick([`${sh(wt.n)} 火力全開拿下 ${wt.pts} 分`,`${sh(wt.n)} 挑起進攻大樑攻下 ${wt.pts} 分`,`${sh(wt.n)} 手感火燙進帳 ${wt.pts} 分`,`${sh(wt.n)} 內外開花砍下 ${wt.pts} 分`])+(ex.length?'，外帶 '+ex.slice(0,2).join('、'):'')+(dd(wt)>=2?'，繳出兩雙。':'，是贏球頭號功臣。');};
+  if(trip&&trip.pts===wt.pts)out.push(`${sh(wt.n)} ${pick(['無所不能','一人宰制全場','打出 MVP 級表現'])}，寫下 ${wt.pts} 分 ${wt.reb} 籃板 ${wt.ast} 助攻的大三元！`);
+  else out.push(starLine());
+  const ang=[];
+  if(trip&&trip.pts!==wt.pts)ang.push({w:9,t:()=>`${sh(trip.n)} 更猛刷 ${trip.pts} 分 ${trip.reb} 板 ${trip.ast} 助寫下大三元！`});
+  if(wt.pts>=28&&lt.pts>=28)ang.push({w:7,t:()=>pick([`${sh(wt.n)} 與 ${sh(lt.n)} 隔空對飆（${wt.pts} 對 ${lt.pts} 分）。`,`兩隊王牌 ${sh(wt.n)}、${sh(lt.n)} 你來我往，分別轟下 ${wt.pts} 與 ${lt.pts} 分。`])});
+  const comeback=cum(wq,3)+8<=cum(lq,3);
+  if(comeback)ang.push({w:99,t:()=>pick([`${wN} 一度落後兩位數，末節打出高潮上演大逆轉！`,`落後的 ${wN} 第四節絕地反攻，完成驚天逆轉。`])});
+  else if((wq&&wq[0])>(lq&&lq[0])&&cum(wq,2)>cum(lq,2)&&cum(wq,3)>cum(lq,3))ang.push({w:4,t:()=>pick([`${wN} 開賽就掌握主動，從頭領到尾。`,`${wN} 全場未讓出領先，穩穩控制節奏。`])});
+  if(ws<100&&ls<100)ang.push({w:6,t:()=>pick([`這是一場低比分的防守肉搏戰。`,`雙方防守強度拉滿，打成防守大戰。`])});
+  if(ws>=122&&ls>=112)ang.push({w:6,t:()=>pick([`兩隊聯手飆出對攻大戰，節奏快得令人喘不過氣。`,`進攻火力全開的一場對轟。`])});
+  if(mg<=3&&!comeback)ang.push({w:7,t:()=>pick([`勝負直到讀秒才分曉，過程高潮迭起。`,`最後一擊定生死，${wN} 驚險守下。`])});
+  const wBench=(wB||[]).filter(p=>!p.start).reduce((s,p)=>s+p.pts,0);
+  if(wBench>=38)ang.push({w:6,t:()=>pick([`${wN} 板凳挹注 ${wBench} 分，替補成為奇兵。`,`第二陣容火力十足，替補合計 ${wBench} 分。`])});
+  const hot=all.filter(p=>p.t3m>=5).sort((a,b)=>b.t3m-a.t3m)[0];
+  if(hot)ang.push({w:6,t:()=>pick([`${sh(hot.n)} 外線發燙，獨進 ${hot.t3m} 記三分。`,`${sh(hot.n)} 三分雨下個不停，命中 ${hot.t3m} 顆。`])});
+  const wDbl=(wB||[]).filter(p=>p.pts>=10).length;
+  if(wDbl>=5)ang.push({w:5,t:()=>pick([`${wN} 多達 ${wDbl} 人得分上雙，多點開花。`,`${wN} 火力分散，${wDbl} 人得分上雙。`])});
+  const blkr=all.filter(p=>p.blk>=4).sort((a,b)=>b.blk-a.blk)[0];
+  if(blkr)ang.push({w:6,t:()=>pick([`${sh(blkr.n)} 賞出 ${blkr.blk} 記火鍋鎮守禁區。`,`禁區門神 ${sh(blkr.n)} 蓋掉 ${blkr.blk} 球。`])});
+  const ftg=all.filter(p=>p.fta>=10).sort((a,b)=>b.fta-a.fta)[0];
+  if(ftg)ang.push({w:4,t:()=>pick([`${sh(ftg.n)} 不斷殺進禁區搏到 ${ftg.fta} 次罰球。`,`${sh(ftg.n)} 站上罰球線 ${ftg.fta} 次，造犯規奏效。`])});
+  if(g.injuries&&g.injuries.length)ang.push({w:5,t:()=>`美中不足的是，${sh(g.injuries[0].name)} 本場受傷下場，預計缺席 ${g.injuries[0].games} 場。`});
+  const must=ang.filter(a=>a.w>=99);must.forEach(a=>out.push(a.t()));
+  let pool=ang.filter(a=>a.w<99);const want=Math.max(1,2+Math.floor(rng()*2)-must.length);
+  for(let n=0;n<want&&pool.length;n++){let tot=pool.reduce((s,a)=>s+a.w,0)*rng(),i=0;for(;i<pool.length;i++){tot-=pool[i].w;if(tot<=0)break;}out.push(pool.splice(i,1)[0].t());}
+  out.push(mg<=5?pick([`${lN} 鏖戰到最後，${sh(lt.n)} 獨拿 ${lt.pts} 分仍功虧一簣。`,`${lN} 緊咬比分，${sh(lt.n)} 的 ${lt.pts} 分難挽敗局。`]):pick([`${lN} 雖有 ${sh(lt.n)} 的 ${lt.pts} 分苦撐，火力仍不敵對手。`,`${lN} 全隊低迷，${sh(lt.n)} 的 ${lt.pts} 分孤掌難鳴。`]));
+  return out.join('\n');
 }
 function showBoxscore(idx){
   const L=(S.gameHist||[])[idx];if(!L)return;
@@ -1608,7 +1586,8 @@ const WACT={
   blk:{ic:'🚫',label:'阻攻',cls:'a-blk'},
   stl:{ic:'🖐',label:'抄截',cls:'a-stl'},
   tov:{ic:'🔄',label:'失誤',cls:'a-tov'},
-  ft:{ic:'🏀',label:'罰球',cls:'a-make'}
+  ft:{ic:'🏀',label:'罰球',cls:'a-make'},
+  tip:{ic:'🏀',label:'跳球',cls:'a-make'}
 };
 function wAv(p,sz){
   if(!p)return "";
@@ -1676,13 +1655,15 @@ function watchGame(idx){
     const ids=[];if(d){if(d.o)ids.push(d.o);if(d.ast)ids.push(d.ast);if(d.reb)ids.push(d.reb);if(d.stl)ids.push(d.stl);if(d.blk)ids.push(d.blk);}
     ids.forEach(paintRow);
     flash(d&&d.o?[d.o]:[]);
-    const A=WACT[e.k]||WACT.miss;cap.className="wcap "+A.cls;cap.textContent=A.ic+" "+e.t;
-    const mine=(e.sd==='A')===myIsA;
-    const cls=e.k==='m3'?'l-m3':e.k==='m2'?'l-m2':e.k==='blk'?'l-blk':e.k==='stl'?'l-stl':e.k==='tov'?'l-tov':e.k==='ft'?'l-m2':'l-miss';
-    const row=document.createElement("div");row.className='wline '+cls+(mine?' mine':'');
-    row.innerHTML=`<span class="wt">${e.c}</span><span class="wx">${e.t}</span><span class="ws">${e.sa}-${e.sb}</span>`;
-    logEl.appendChild(row);logEl.scrollTop=logEl.scrollHeight;
-    while(logEl.children.length>40)logEl.removeChild(logEl.firstChild);
+    if(e.t){ // 只在關鍵動作顯示播報與字幕（一般空檔球不洗版）
+      const A=WACT[e.k]||WACT.miss;cap.className="wcap "+A.cls;cap.textContent=A.ic+" "+e.t;
+      const mine=(e.sd==='A')===myIsA;
+      const cls=e.k==='m3'?'l-m3':e.k==='m2'?'l-m2':e.k==='blk'?'l-blk':e.k==='stl'?'l-stl':e.k==='tov'?'l-tov':e.k==='ft'?'l-m2':e.k==='tip'?'l-m2':'l-miss';
+      const row=document.createElement("div");row.className='wline '+cls+(mine?' mine':'');
+      row.innerHTML=`<span class="wt">${e.c}</span><span class="wx">${e.t}</span><span class="ws">${e.sa}-${e.sb}</span>`;
+      logEl.appendChild(row);logEl.scrollTop=logEl.scrollHeight;
+      while(logEl.children.length>40)logEl.removeChild(logEl.firstChild);
+    }
   }
   function start(){stop();timer=setInterval(step,speeds[si].ms);}
   function stop(){if(timer){clearInterval(timer);timer=null;}}

@@ -488,6 +488,17 @@ function matchupCard(opp){
   });
   return h+`<div class="muted" style="font-size:10px;margin-top:4px">${defSel?'已選取一列，點另一列即互換防守者。':'點一列選取（變亮）→ 再點另一列，兩名防守者互換。'}紅字＝守不住、⚠＝跨位置。</div></div>`;
 }
+// 賽前進攻戰術選單
+function tacticCard(){
+  if(!S.roster||!S.roster.length)return "";
+  const cur=S.tactic||{t:'none'};const fp=cur.t==='feed'?S.roster.find(p=>p.id===cur.target):null;
+  let h=`<div class="card" style="padding:8px 10px;border-color:var(--maple-deep)"><div class="muted" style="font-size:11px;margin-bottom:6px">📋 進攻戰術　目前：<b style="color:var(--led)">${tacIc(cur)} ${tacName(cur)}</b>${fp?'（球給 '+fp.name.split(' ').pop()+'）':''}</div>`;
+  h+=`<div style="display:flex;flex-wrap:wrap;gap:6px">`+TACTICS.map(t=>`<button class="btn sm" data-act="settactic" data-arg="${t.id}" style="${cur.t===t.id?'border-color:var(--led);color:var(--led);background:rgba(255,176,46,.12)':''}">${t.ic} ${t.n}</button>`).join("")+`</div>`;
+  const x=TACTICS.find(z=>z.id===cur.t);if(x)h+=`<div class="muted" style="font-size:10px;margin-top:5px">${x.d}</div>`;
+  if(cur.t==='feed'){const st=lineupOf({roster:S.roster},true).st;
+    h+=`<div class="muted" style="font-size:10px;margin-top:6px">球給哪位先發：</div><div style="display:flex;flex-wrap:wrap;gap:5px;margin-top:3px">`+st.map(p=>`<button class="btn sm" data-act="setfeed" data-arg="${p.id}" style="${cur.target===p.id?'border-color:var(--led);color:var(--led)':''}">${p.name.split(' ').pop()}</button>`).join("")+`</div>`;}
+  return h+`</div>`;
+}
 // (B) 非線性才能值：高 OVR 的每一分更值錢，巨星貢獻被放大
 function gameVal(p){const e=eff(p);return e+Math.pow(Math.max(0,e-84),1.4)*0.18;}
 function power(team,isMe){
@@ -697,9 +708,35 @@ function buildDefMap(O,D,useMine){
 }
 const HANDLE={PG:1.0,SG:0.85,SF:0.68,PF:0.52,C:0.42},SIZE={PG:0,SG:0.5,SF:1.5,PF:3,C:4.5};
 function effW(w){return (w.p.ovr+(w.p.form||0)*0.6)*(0.72+0.28*Math.max(0,w.sta)/100);}
-function usageW(w){return Math.pow(Math.max(1,w.p.pts),0.85)*(0.6+effW(w)/170);}
+function usageW(w,tac){let u=Math.pow(Math.max(1,w.p.pts),0.85)*(0.6+effW(w)/170);if(tac){if(tac.t==='feed'&&w.p.id===tac.target)u*=2.3;else if(tac.t==='share')u=Math.pow(u,0.62);}return u;}
 function rebN(p){return (p.reb||3)+1;}
 const LnP=p=>p.name.split(' ').filter(x=>x!=='Jr'&&x!=='Jr.'&&x!=='II'&&x!=='III').pop();
+/* ===== 進攻戰術系統 ===== */
+const TACTICS=[
+ {id:'none',n:'無戰術',ic:'⚪',d:'依球員特性自然發揮'},
+ {id:'three',n:'主打三分',ic:'🎯',d:'大量出手三分，火力猛但變異大；怕外圍防守'},
+ {id:'inside',n:'主打內線',ic:'💪',d:'主攻禁區與罰球；遇護框長人會吃癟'},
+ {id:'feed',n:'球給主將',ic:'⭐',d:'用球集中給指定球員，高個人表現、被重點盯防'},
+ {id:'share',n:'團隊籃球',ic:'🤝',d:'分享球、多點開花、難被盯防；適合平衡陣容'},
+ {id:'foul',n:'買犯製造罰球',ic:'🦵',d:'頻繁切入造犯規上罰球線；對少犯規隊無效'},
+ {id:'run',n:'跑轟加速',ic:'⚡',d:'加快節奏、攻守對拼、變數大；靠體力'}
+];
+function tacName(t){const x=TACTICS.find(z=>z.id===(t&&t.t));return x?x.n:'無戰術';}
+function tacIc(t){const x=TACTICS.find(z=>z.id===(t&&t.t));return x?x.ic:'⚪';}
+function aiTactic(team){
+  const r=healthy(team.roster||[]).slice().sort((a,b)=>(b.pts||0)-(a.pts||0));
+  if(r.length<5)return {t:'none'};
+  const st=r.slice(0,5),bigBlk=st.find(p=>(p.blk||0)>=1.6&&(p.pts||0)>=13),shooters=st.filter(p=>(p.t3r||0)>=0.40).length;
+  const star=st[0],second=st[1],drawer=st.find(p=>(p.ftr||0)>=0.42&&(p.pts||0)>=18);
+  const cand=['run'];
+  if(bigBlk)cand.push('inside');
+  if(shooters>=3)cand.push('three','three');
+  if(star&&(star.pts||0)>=26&&(!second||star.pts-second.pts>=8))cand.push({t:'feed',target:star.id});
+  if(drawer)cand.push('foul');
+  if(shooters<=2&&!bigBlk)cand.push('share');
+  const pk=cand[Math.floor(Math.random()*cand.length)];
+  return typeof pk==='string'?{t:pk}:pk;
+}
 function engTeam(team,isMe,name){const{st,bench}=lineupOf(team,isMe);const all=[...st,...bench.slice(0,4)];
   const players=all.map((p,i)=>({p,start:i<st.length,sta:Math.max(40,p.sta||100),pf:0,fld:false,secs:0,qp:0,pts:0,reb:0,ast:0,stl:0,blk:0,fgm:0,fga:0,t3m:0,t3a:0,ftm:0,fta:0,tov:0}));
   const raw=[37,35,34,32,30,16,14,12,10],tot=players.reduce((s,_,i)=>s+(raw[i]||6),0);players.forEach((w,i)=>w.tmin=(raw[i]||6)*240/tot);
@@ -714,20 +751,22 @@ function subBench(T,q,margin){T.live=T.live.filter(w=>{if(w.pf>=6)w.fld=true;ret
   if(q>=4&&Math.abs(margin)<=13){T.players.filter(w=>w.start).forEach(s=>{if(!s.fld&&!T.live.includes(s)){const out=[...T.live].sort((a,b)=>T.players.indexOf(b)-T.players.indexOf(a))[0];if(out&&!out.start)T.live[T.live.indexOf(out)]=s;}});return;}
   const over=[...T.live].sort((a,b)=>pace(b)-pace(a))[0],under=avail().sort((a,b)=>pace(a)-pace(b))[0];
   if(over&&under&&pace(over)>pace(under)+0.06)T.live[T.live.indexOf(over)]=under;}
-function trip(O,D){const dmap=liveDefMap(O,D);
+function trip(O,D){const tac=O.tac||{t:'none'},tovB=tac.t==='run'?1.08:1;const dmap=liveDefMap(O,D);
   const h=[...O.live].sort((a,b)=>(HANDLE[b.p.pos]+b.p.ovr*0.004)-(HANDLE[a.p.pos]+a.p.ovr*0.004))[0],hD=dmap[h.p.id]||D.live[0];
   if(Math.random()<0.10){const df=D.live[Math.floor(Math.random()*D.live.length)];df.pf++;D.qf=(D.qf||0)+1;
     if(D.qf>4){let m=0;for(let i=0;i<2;i++)if(Math.random()<ftPct(h.p))m++;h.fta+=2;h.ftm+=m;h.pts+=m;h.qp+=m;return {pts:m,evs:[{k:'ft',oid:h.p.id,did:df.p.id,t:LnP(h.p)+' 團隊犯規兩罰中 '+m,d:{o:h.p.id,fta:2,ftm:m,pts:m,pf:df.p.id}}]};}}
-  if(Math.random()<Math.max(0.012,Math.min(0.12,0.055*((hD.p.stl||0.8)/1.2)/(HANDLE[h.p.pos]+h.p.ovr*0.004)))){hD.stl++;h.tov++;return {pts:0,evs:[{k:'stl',oid:h.p.id,did:hD.p.id,t:LnP(hD.p)+' 半場抄走 '+LnP(h.p),d:{o:h.p.id,tov:1,stl:hD.p.id}}]};}
-  const S2=O.live[wpick(O.live.map(usageW))],Dg=dmap[S2.p.id]||D.live[0];let passer=null;
-  if(Math.random()<0.70){const mates=O.live.filter(w=>w!==S2),pp=mates[wpick(mates.map(w=>Math.max(0.3,w.p.ast)))],pD=dmap[pp.p.id]||D.live[0];
+  if(Math.random()<Math.max(0.012,Math.min(0.12,0.055*tovB*((hD.p.stl||0.8)/1.2)/(HANDLE[h.p.pos]+h.p.ovr*0.004)))){hD.stl++;h.tov++;return {pts:0,evs:[{k:'stl',oid:h.p.id,did:hD.p.id,t:LnP(hD.p)+' 半場抄走 '+LnP(h.p),d:{o:h.p.id,tov:1,stl:hD.p.id}}]};}
+  const S2=O.live[wpick(O.live.map(w=>usageW(w,tac)))],Dg=dmap[S2.p.id]||D.live[0];let passer=null;
+  if(Math.random()<(tac.t==='share'?0.80:0.70)){const mates=O.live.filter(w=>w!==S2),pp=mates[wpick(mates.map(w=>Math.max(0.3,w.p.ast)))],pD=dmap[pp.p.id]||D.live[0];
     if(Math.random()<Math.max(0.01,Math.min(0.11,0.045*((pD.p.stl||0.8)/1.2)))){pD.stl++;pp.tov++;return {pts:0,evs:[{k:'stl',oid:pp.p.id,did:pD.p.id,t:LnP(pD.p)+' 抄掉 '+LnP(pp.p)+' 的傳球',d:{o:pp.p.id,tov:1,stl:pD.p.id}}]};}passer=pp;}
-  if(Math.random()<0.075){S2.tov++;return {pts:0,evs:[{k:'tov',oid:S2.p.id,t:LnP(S2.p)+' 進攻失誤',d:{o:S2.p.id,tov:1}}]};}
-  const three=Math.random()<Math.max(0.02,Math.min(0.85,S2.p.t3r!=null?S2.p.t3r:(THREE_P[S2.p.pos]||0.3)));
+  if(Math.random()<0.075*tovB){S2.tov++;return {pts:0,evs:[{k:'tov',oid:S2.p.id,t:LnP(S2.p)+' 進攻失誤',d:{o:S2.p.id,tov:1}}]};}
+  let _t3=(S2.p.t3r!=null?S2.p.t3r:(THREE_P[S2.p.pos]||0.3));if(tac.t==='three')_t3*=1.5;else if(tac.t==='inside')_t3*=0.45;
+  const three=Math.random()<Math.max(0.02,Math.min(0.90,_t3));
   const sw=three?'三分':(Math.random()<0.45?'中距離':(Math.random()<0.6?'切入':'跳投'));
-  if(Math.random()<Math.max(0,Math.min(0.20,(Dg.p.blk||0.5)*0.078*(three?0.4:1.2)))){Dg.blk++;S2.fga++;if(three)S2.t3a++;const rb=D.live[wpick(D.live.map(w=>rebN(w.p)))];rb.reb++;return {pts:0,evs:[{k:'blk',oid:S2.p.id,did:Dg.p.id,three,t:LnP(Dg.p)+' 火鍋蓋掉 '+LnP(S2.p)+'！',d:{o:S2.p.id,fga:1,t3a:three?1:0,blk:Dg.p.id,reb:rb.p.id}}]};}
-  const fouled=Math.random()<0.068*Math.max(0.35,Math.min(3.6,Math.pow((S2.p.ftr!=null?S2.p.ftr:0.22)/0.22,1.4)));
-  let mp=Math.max(0.28,Math.min(0.595,0.545+(effW(S2)-80)*0.0023+((S2.p.fg||47)-47)*0.003-((Dg.p.drtg||60)-62)*0.0022-(three?0.155:0)-Math.max(0,Math.min(0.17,(S2.pts-26)*0.007))));
+  if(Math.random()<Math.max(0,Math.min(0.22,(Dg.p.blk||0.5)*0.078*(three?0.4:1.2)*(tac.t==='inside'?1.25:1)))){Dg.blk++;S2.fga++;if(three)S2.t3a++;const rb=D.live[wpick(D.live.map(w=>rebN(w.p)))];rb.reb++;return {pts:0,evs:[{k:'blk',oid:S2.p.id,did:Dg.p.id,three,t:LnP(Dg.p)+' 火鍋蓋掉 '+LnP(S2.p)+'！',d:{o:S2.p.id,fga:1,t3a:three?1:0,blk:Dg.p.id,reb:rb.p.id}}]};}
+  let _fm=Math.pow((S2.p.ftr!=null?S2.p.ftr:0.22)/0.22,1.4);if(tac.t==='foul')_fm*=1.3;if(tac.t==='inside')_fm*=1.3;
+  const fouled=Math.random()<0.068*Math.max(0.35,Math.min(4.5,_fm));
+  let mp=Math.max(0.28,Math.min(0.595,0.545+(effW(S2)-80)*0.0023+((S2.p.fg||47)-47)*0.003-((Dg.p.drtg||60)-62)*0.0022-(three?0.155:0)-Math.max(0,Math.min(0.17,(S2.pts-26)*0.007))+(tac.t==='inside'?0.009:0)+(tac.t==='run'?0.012:0)+(tac.t==='share'?0.014:0)+(tac.t==='feed'&&S2.p.id===tac.target?-0.016:0)));
   if(Math.random()<mp){const val=three?3:2;S2.fga++;S2.fgm++;S2.pts+=val;S2.qp+=val;if(three){S2.t3a++;S2.t3m++;}
     const d={o:S2.p.id,fga:1,fgm:1,t3a:three?1:0,t3m:three?1:0,pts:val};let tail='';
     if(passer){passer.ast++;d.ast=passer.p.id;tail='（'+LnP(passer.p)+' 助攻）';}
@@ -735,20 +774,23 @@ function trip(O,D){const dmap=liveDefMap(O,D);
     return {pts:d.pts,evs:[{k:three?'m3':'m2',off:true,oid:S2.p.id,did:Dg.p.id,three,t:LnP(S2.p)+' '+sw+(three?'命中':'命中 '+val+' 分')+tail,d}]};}
   if(fouled){const n=three?3:2;let m=0;for(let i=0;i<n;i++)if(Math.random()<ftPct(S2.p))m++;S2.fta+=n;S2.ftm+=m;S2.pts+=m;S2.qp+=m;const fp=(Math.random()<0.35?D.live[Math.floor(Math.random()*D.live.length)]:Dg);fp.pf++;D.qf++;return {pts:m,evs:[{k:'ft',oid:S2.p.id,did:fp.p.id,t:LnP(S2.p)+' '+sw+'出手遭犯規，'+n+' 罰中 '+m,d:{o:S2.p.id,fta:n,ftm:m,pts:m,pf:fp.p.id}}]};}
   S2.fga++;if(three)S2.t3a++;
-  if(Math.random()<0.22){const rb=O.live[wpick(O.live.map(w=>(w.p.reb||3)+0.5))];rb.reb++;const missEv={k:'miss',oid:S2.p.id,three,t:'',d:{o:S2.p.id,fga:1,t3a:three?1:0,reb:rb.p.id}};
+  if(Math.random()<(tac.t==='inside'?0.27:0.22)){const rb=O.live[wpick(O.live.map(w=>(w.p.reb||3)+0.5))];rb.reb++;const missEv={k:'miss',oid:S2.p.id,three,t:'',d:{o:S2.p.id,fga:1,t3a:three?1:0,reb:rb.p.id}};
     if(Math.random()<0.52){rb.fga++;rb.fgm++;rb.pts+=2;rb.qp+=2;return {pts:2,evs:[missEv,{k:'m2',off:true,oid:rb.p.id,t:LnP(S2.p)+' '+sw+'不進，'+LnP(rb.p)+' 進攻籃板補進 2 分',d:{o:rb.p.id,fga:1,fgm:1,pts:2}}]};}
     rb.fga++;const d2=D.live[wpick(D.live.map(w=>rebN(w.p)))];d2.reb++;return {pts:0,evs:[missEv,{k:'miss',oid:rb.p.id,t:'',d:{o:rb.p.id,fga:1,reb:d2.p.id}}]};}
   let dd={o:S2.p.id,fga:1,t3a:three?1:0};if(Math.random()>0.13){const rb=D.live[wpick(D.live.map(w=>rebN(w.p)))];rb.reb++;dd.reb=rb.p.id;}
   return {pts:0,evs:[{k:'miss',oid:S2.p.id,three,t:'',d:dd}]};}
 function simGameDetailed(ta,tb,meIdx){const A=engTeam(ta,meIdx===0,ta.name||'A'),B=engTeam(tb,meIdx===1,tb.name||'B'),nameA=A.name,nameB=B.name;
-  const qa=[],qb=[],evts=[],qsum=[],pbp=[];let sa=0,sb=0;const QP=26,dt=2880/(QP*2*4);
+  A.tac=meIdx===0?(S.tactic||{t:'none'}):aiTactic(ta);B.tac=meIdx===1?(S.tactic||{t:'none'}):aiTactic(tb);
+  const qa=[],qb=[],evts=[],qsum=[],pbp=[];let sa=0,sb=0;const QP=Math.round(26*(1+((A.tac.t==='run'||B.tac.t==='run')?0.15:0))),dt=2880/(QP*2*4);
+  const decA=A.tac.t==='run'?0.48:0.42,decB=B.tac.t==='run'?0.48:0.42;
   const tipS=T=>T.live.reduce((m,w)=>Math.max(m,w.p.ovr+(SIZE[w.p.pos]||0)*2),0);
   let off=Math.random()<1/(1+Math.exp(-(tipS(A)-tipS(B))*0.15))?A:B;
   pbp.push({c:'Q1 12:00',sd:off===A?'A':'B',k:'tip',t:'🏀 跳球：'+(off===A?nameA:nameB)+' 先取得球權',d:null,sa:0,sb:0});
+  pbp.push({c:'賽前',sd:'A',k:'tac',t:'📋 戰術　'+nameA+'：'+tacIc(A.tac)+tacName(A.tac)+'　／　'+nameB+'：'+tacIc(B.tac)+tacName(B.tac),d:null,sa:0,sb:0});
   const recover=()=>{A.players.concat(B.players).forEach(w=>{if(!A.live.includes(w)&&!B.live.includes(w))w.sta=Math.min(100,w.sta+2.2);});};
   for(let q=0;q<4;q++){A.players.forEach(w=>w.qp=0);B.players.forEach(w=>w.qp=0);A.qf=0;B.qf=0;const qsA=sa,qsB=sb,total=QP*2;
     for(let i=0;i<total;i++){const O=off,D=off===A?B:A,sd=O===A?'A':'B',r=trip(O,D);if(O===A)sa+=r.pts;else sb+=r.pts;
-      [...A.live,...B.live].forEach(w=>{w.secs+=dt;w.sta=Math.max(0,w.sta-0.42);});recover();
+      A.live.forEach(w=>{w.secs+=dt;w.sta=Math.max(0,w.sta-decA);});B.live.forEach(w=>{w.secs+=dt;w.sta=Math.max(0,w.sta-decB);});recover();
       const rem=12*(1-(i+1)/total),mm=Math.floor(rem),ss=Math.floor((rem-mm)*60),c='Q'+(q+1)+' '+mm+':'+String(ss).padStart(2,'0'),clutch=(q===3&&i>=total-8);
       r.evs.forEach(ev=>{if(ev.t&&(ev.k==='m3'||ev.k==='blk'||ev.k==='stl'||(clutch&&ev.off)))evts.push({c,t:'【'+(sd==='A'?nameA:nameB)+'】'+ev.t,s:sa+'-'+sb,clutch});pbp.push({c,sd,k:ev.k,oid:ev.oid,did:ev.did,z:ev.three?1:0,d:ev.d,t:ev.t||'',sa,sb});});
       off=D;if(i%12===11){subBench(A,q+1,sa-sb);subBench(B,q+1,sb-sa);}}
@@ -761,7 +803,7 @@ function simGameDetailed(ta,tb,meIdx){const A=engTeam(ta,meIdx===0,ta.name||'A')
   const oppR=meIdx===0?B:A,myR=meIdx===0?A:B,sortSt=T=>T.players.filter(w=>w.start).sort((a,b)=>(POS_NUM[a.p.pos]||3)-(POS_NUM[b.p.pos]||3)),oppSt=sortSt(oppR),mySt=sortSt(myR);
   const matchup=oppSt.map((op,i)=>{const d=mySt[Math.min(i,mySt.length-1)];return {oppN:LnP(op.p),oppPos:op.p.pos,oppOvr:op.p.ovr,meN:d?LnP(d.p):'-',mePos:d?d.p.pos:'',meDr:d?(d.p.drtg||'-'):''};});
   const lineOf=T=>T.players.map(w=>({id:w.p.id,n:LnP(w.p),pos:w.p.pos,pid:w.p.pid||0,ovr:w.p.ovr,st:w.start}));
-  return {sa,sb,qa,qb,boxA:mkBox(A),boxB:mkBox(B),evts:hi,qsum,matchup,myName:myR.name,pbp,nA:nameA,nB:nameB,myIsA:meIdx===0,lineA:lineOf(A),lineB:lineOf(B)};}
+  return {sa,sb,qa,qb,boxA:mkBox(A),boxB:mkBox(B),evts:hi,qsum,matchup,myName:myR.name,pbp,nA:nameA,nB:nameB,myIsA:meIdx===0,lineA:lineOf(A),lineB:lineOf(B),tacA:tacName(A.tac),tacB:tacName(B.tac)};}
 function simGame(ta,tb,meIdx){
   const pa=power(ta,meIdx===0)||50,pb=power(tb,meIdx===1)||50;
   const qa=[],qb=[];let sa=0,sb=0;
@@ -1316,6 +1358,7 @@ function vTeam(){
   }
   if(r.length)h+=courtView()+`<button class="btn ghost block" data-act="autostart" style="margin:0 0 10px">⚡ 一鍵最佳先發（依狀態自動排位）</button>`; // 半場先發圖 + 自動排
   if(r.length)h+=matchupCard(nextOpponent()); // 賽前對位，邊排先發邊看
+  if(r.length)h+=tacticCard(); // 賽前進攻戰術
   if(!r.length)h+=`<div class="card empty">還沒有球員。<br>到「市場」分頁簽下你的第一批球員吧！</div>`;
   else{
     // 位置分類篩選（按鈕帶各位置人數）
@@ -1504,6 +1547,7 @@ function genRecap(L){
     return pick([`${sh(wt.n)} 火力全開拿下 ${wt.pts} 分`,`${sh(wt.n)} 挑起進攻大樑攻下 ${wt.pts} 分`,`${sh(wt.n)} 手感火燙進帳 ${wt.pts} 分`,`${sh(wt.n)} 內外開花砍下 ${wt.pts} 分`])+(ex.length?'，外帶 '+ex.slice(0,2).join('、'):'')+(dd(wt)>=2?'，繳出兩雙。':'，是贏球頭號功臣。');};
   if(trip&&trip.pts===wt.pts)out.push(`${sh(wt.n)} ${pick(['無所不能','一人宰制全場','打出 MVP 級表現'])}，寫下 ${wt.pts} 分 ${wt.reb} 籃板 ${wt.ast} 助攻的大三元！`);
   else out.push(starLine());
+  const wTac=winA?g.tacA:g.tacB;if(wTac&&wTac!=='無戰術')out.push(`${wN} 本場祭出「${wTac}」戰術奏效。`);
   const ang=[];
   if(trip&&trip.pts!==wt.pts)ang.push({w:9,t:()=>`${sh(trip.n)} 更猛刷 ${trip.pts} 分 ${trip.reb} 板 ${trip.ast} 助寫下大三元！`});
   if(wt.pts>=28&&lt.pts>=28)ang.push({w:7,t:()=>pick([`${sh(wt.n)} 與 ${sh(lt.n)} 隔空對飆（${wt.pts} 對 ${lt.pts} 分）。`,`兩隊王牌 ${sh(wt.n)}、${sh(lt.n)} 你來我往，分別轟下 ${wt.pts} 與 ${lt.pts} 分。`])});
@@ -1587,7 +1631,8 @@ const WACT={
   stl:{ic:'🖐',label:'抄截',cls:'a-stl'},
   tov:{ic:'🔄',label:'失誤',cls:'a-tov'},
   ft:{ic:'🏀',label:'罰球',cls:'a-make'},
-  tip:{ic:'🏀',label:'跳球',cls:'a-make'}
+  tip:{ic:'🏀',label:'跳球',cls:'a-make'},
+  tac:{ic:'📋',label:'戰術',cls:'a-stl'}
 };
 function wAv(p,sz){
   if(!p)return "";
@@ -1776,6 +1821,8 @@ document.addEventListener("click",e=>{
     case "starter":togStarter(id);break;
     case "autostart":S.starters=autoStarters(S.roster);S.defByOpp={};save();render();toast("已依狀態自動排出最佳先發");break;
     case "assigndef":tapMatchup(id||arg);break;
+    case "settactic":{const t=arg;let tgt=(S.tactic&&S.tactic.target)||null;if(t==='feed'&&!tgt){const st=lineupOf({roster:S.roster},true).st.slice().sort((a,b)=>(b.pts||0)-(a.pts||0));tgt=st[0]?st[0].id:null;}S.tactic={t,target:t==='feed'?tgt:null};save();render();toast("戰術："+tacName({t}));break;}
+    case "setfeed":S.tactic={t:'feed',target:arg};save();render();break;
     case "rerollroster":rerollRoster();break;
     case "teststars":testStarTeam();break;
     case "testplay1":testPlay(1);break;

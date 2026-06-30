@@ -492,11 +492,12 @@ function matchupCard(opp){
 function tacticCard(){
   if(!S.roster||!S.roster.length)return "";
   const cur=S.tactic||{t:'none'};const fp=cur.t==='feed'?S.roster.find(p=>p.id===cur.target):null;
-  let h=`<div class="card" style="padding:8px 10px;border-color:var(--maple-deep)"><div class="muted" style="font-size:11px;margin-bottom:6px">📋 進攻戰術　目前：<b style="color:var(--led)">${tacIc(cur)} ${tacName(cur)}</b>${fp?'（球給 '+fp.name.split(' ').pop()+'）':''}</div>`;
-  h+=`<div style="display:flex;flex-wrap:wrap;gap:6px">`+TACTICS.map(t=>`<button class="btn sm" data-act="settactic" data-arg="${t.id}" style="${cur.t===t.id?'border-color:var(--led);color:var(--led);background:rgba(255,176,46,.12)':''}">${t.ic} ${t.n}</button>`).join("")+`</div>`;
-  const x=TACTICS.find(z=>z.id===cur.t);if(x)h+=`<div class="muted" style="font-size:10px;margin-top:5px">${x.d}</div>`;
+  const sel='background:var(--led);color:#15171e;border:1px solid var(--led);font-weight:800';
+  let h=`<div class="card" style="padding:10px;border-color:var(--maple-deep)"><div class="muted" style="font-size:11px;margin-bottom:8px">📋 進攻戰術　目前：<b style="color:var(--led)">${tacIc(cur)} ${tacName(cur)}</b>${fp?'（球給 '+fp.name.split(' ').pop()+'）':''}</div>`;
+  h+=`<div style="display:grid;grid-template-columns:1fr 1fr;gap:7px">`+TACTICS.map(t=>{const on=cur.t===t.id;return `<button class="btn ${on?'':'ghost'}" data-act="settactic" data-arg="${t.id}" style="${on?sel:''};font-size:13px;padding:9px 4px">${t.ic} ${t.n}</button>`;}).join("")+`</div>`;
+  const x=TACTICS.find(z=>z.id===cur.t);if(x)h+=`<div class="muted" style="font-size:10.5px;margin-top:8px;line-height:1.5">${x.d}</div>`;
   if(cur.t==='feed'){const st=lineupOf({roster:S.roster},true).st;
-    h+=`<div class="muted" style="font-size:10px;margin-top:6px">球給哪位先發：</div><div style="display:flex;flex-wrap:wrap;gap:5px;margin-top:3px">`+st.map(p=>`<button class="btn sm" data-act="setfeed" data-arg="${p.id}" style="${cur.target===p.id?'border-color:var(--led);color:var(--led)':''}">${p.name.split(' ').pop()}</button>`).join("")+`</div>`;}
+    h+=`<div style="font-size:11px;margin-top:10px;margin-bottom:5px;color:var(--led);font-weight:700">⭐ 球給哪位先發（點選指定）：</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">`+st.map(p=>{const on=cur.target===p.id;return `<button class="btn ${on?'':'ghost'}" data-act="setfeed" data-arg="${p.id}" style="${on?sel:''};font-size:13px;padding:8px 4px">${on?'✓ ':''}${p.name.split(' ').pop()}<span style="font-size:9px;opacity:.7"> ${p.pos}</span></button>`;}).join("")+`</div>`;}
   return h+`</div>`;
 }
 // (B) 非線性才能值：高 OVR 的每一分更值錢，巨星貢獻被放大

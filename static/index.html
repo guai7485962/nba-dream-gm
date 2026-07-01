@@ -709,14 +709,14 @@ function buildDefMap(O,D,useMine){
 }
 const HANDLE={PG:1.0,SG:0.85,SF:0.68,PF:0.52,C:0.42},SIZE={PG:0,SG:0.5,SF:1.5,PF:3,C:4.5};
 function effW(w){return (w.p.ovr+(w.p.form||0)*0.6)*(0.72+0.28*Math.max(0,w.sta)/100);}
-function usageW(w,tac){let u=Math.pow(Math.max(1,w.p.pts),0.85)*(0.6+effW(w)/170);if(tac){if(tac.t==='feed'&&w.p.id===tac.target)u*=2.1;else if(tac.t==='share')u=Math.pow(u,0.62);}return u;}
+function usageW(w,tac){let u=Math.pow(Math.max(1,w.p.pts),0.85)*(0.6+effW(w)/170);if(tac){if(tac.t==='feed'&&w.p.id===tac.target)u*=2.1;else if(tac.t==='share')u=Math.pow(u,0.62);else if(tac.t==='inside')u*=(w.p.pos==='C'?1.55:w.p.pos==='PF'?1.35:w.p.pos==='SF'?1.0:0.82);else if(tac.t==='three')u*=(0.75+(w.p.t3r!=null?w.p.t3r:0.3)*1.2);}return u;}
 function rebN(p){return (p.reb||3)+1;}
 const LnP=p=>p.name.split(' ').filter(x=>x!=='Jr'&&x!=='Jr.'&&x!=='II'&&x!=='III').pop();
 /* ===== 進攻戰術系統 ===== */
 const TACTICS=[
  {id:'none',n:'無戰術',ic:'⚪',d:'依球員特性自然發揮'},
- {id:'three',n:'主打三分',ic:'🎯',d:'大量出手三分，火力猛但變異大；怕外圍防守'},
- {id:'inside',n:'主打內線',ic:'💪',d:'主攻禁區與罰球；遇護框長人會吃癟'},
+ {id:'three',n:'主打三分',ic:'🎯',d:'球權往射手傾斜、狂投三分，火力猛但變異大；怕外圍防守'},
+ {id:'inside',n:'主打內線',ic:'💪',d:'球權往長人傾斜、主攻禁區與罰球；遇護框長人會吃癟'},
  {id:'feed',n:'球給主將',ic:'⭐',d:'用球集中給指定球員，高個人表現、被重點盯防'},
  {id:'share',n:'團隊籃球',ic:'🤝',d:'分享球、多點開花、難被盯防；適合平衡陣容'},
  {id:'foul',n:'買犯製造罰球',ic:'🦵',d:'頻繁切入造犯規上罰球線；對少犯規隊無效'},

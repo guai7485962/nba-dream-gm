@@ -767,7 +767,7 @@ function trip(O,D){const tac=O.tac||{t:'none'},tovB=tac.t==='run'?1.08:1;const d
   if(Math.random()<Math.max(0,Math.min(0.22,(Dg.p.blk||0.5)*0.078*(three?0.4:1.2)*(tac.t==='inside'?1.25:1)))){Dg.blk++;S2.fga++;if(three)S2.t3a++;const rb=D.live[wpick(D.live.map(w=>rebN(w.p)))];rb.reb++;return {pts:0,evs:[{k:'blk',oid:S2.p.id,did:Dg.p.id,three,t:LnP(Dg.p)+' 火鍋蓋掉 '+LnP(S2.p)+'！',d:{o:S2.p.id,fga:1,t3a:three?1:0,blk:Dg.p.id,reb:rb.p.id}}]};}
   let _fm=Math.pow((S2.p.ftr!=null?S2.p.ftr:0.22)/0.22,1.4);if(tac.t==='foul')_fm*=1.3;if(tac.t==='inside')_fm*=1.3;
   const fouled=Math.random()<0.068*Math.max(0.35,Math.min(3.3,_fm));
-  let mp=Math.max(0.28,Math.min(0.55,0.53+(effW(S2)-80)*0.0018+((S2.p.fg||47)-47)*0.003-((Dg.p.drtg||60)-62)*0.0022-(three?0.155:0)-Math.max(0,Math.min(0.20,(S2.pts-22)*0.009))+(tac.t==='inside'?0.009:0)+(tac.t==='run'?0.012:0)+(tac.t==='share'?0.014:0)+(tac.t==='feed'&&S2.p.id===tac.target?-0.016:0)));
+  let mp=Math.max(0.28,Math.min(0.575,0.54+(effW(S2)-80)*0.0022+((S2.p.fg||47)-47)*0.003-((Dg.p.drtg||60)-62)*0.0022-(three?0.155:0)-Math.max(0,Math.min(0.18,(S2.pts-24)*0.008))+(tac.t==='inside'?0.009:0)+(tac.t==='run'?0.012:0)+(tac.t==='share'?0.014:0)+(tac.t==='feed'&&S2.p.id===tac.target?-0.016:0)));
   if(Math.random()<mp){const val=three?3:2;S2.fga++;S2.fgm++;S2.pts+=val;S2.qp+=val;if(three){S2.t3a++;S2.t3m++;}
     const d={o:S2.p.id,fga:1,fgm:1,t3a:three?1:0,t3m:three?1:0,pts:val};let tail='';
     if(passer){passer.ast++;d.ast=passer.p.id;tail='（'+LnP(passer.p)+' 助攻）';}
@@ -1615,13 +1615,41 @@ function showBoxscore(idx){
     ${g.qsum&&g.qsum.length?`<div class="card" style="padding:8px 10px"><div class="muted" style="font-weight:700;color:var(--led);margin-bottom:4px">📊 逐節摘要</div>${g.qsum.map(s=>`<div style="font-size:12px;padding:3px 0;border-bottom:1px solid var(--line)">${s}</div>`).join("")}</div>`:""}
     ${g.evts&&g.evts.length?`<div class="card" style="padding:8px 10px"><div class="muted" style="font-weight:700;color:var(--led);margin-bottom:4px">🎬 比賽精華</div>${g.evts.map(e=>`<div style="font-size:12px;padding:3px 0;display:flex;gap:8px;align-items:baseline"><span class="muted" style="width:60px;flex-shrink:0;font-family:Menlo,monospace;font-size:10px">${e.c}</span><span style="flex:1">${e.t}</span><span class="muted" style="font-family:Menlo,monospace;font-size:10px">${e.s}</span></div>`).join("")}</div>`:""}
     ${g.pbp&&g.pbp.length?`<button class="btn block" data-act="watch" style="background:#1b2a1f;color:var(--good);border:1px solid #2e5a3a;margin-bottom:6px">▶ 觀戰重播（逐球播報）</button>`:""}
+    <button class="btn block" data-act="exporttext" style="margin-bottom:6px">📋 匯出文字（可複製）</button>
     <button class="btn block" data-act="closemodal">關閉</button>
   </div>`;
   bg.addEventListener("click",e=>{
     if(e.target.dataset.act==="watch"){bg.remove();watchGame(idx);return;}
+    if(e.target.dataset.act==="exporttext"){showTextExport(gameToText(L));return;}
     if(e.target===bg||e.target.dataset.act==="closemodal")bg.remove();
   });
   document.body.appendChild(bg);
+}
+// 把一場比賽輸出成純文字（給玩家複製討論）
+function gameToText(L){
+  const g=L.g,sh=n=>(n||'');
+  const line=b=>`${sh(b.n)}(${b.pos}) ${b.pts}分 籃${b.reb} 助${b.ast} 投${b.fgm!=null?b.fgm+'-'+b.fga:'-'} 三分${b.t3m!=null?b.t3m+'-'+b.t3a:'-'} 罰${b.ftm!=null?b.ftm+'-'+b.fta:'-'} 抄${b.stl} 帽${b.blk} 失${b.tov!=null?b.tov:'-'} 犯${b.pf!=null?b.pf:'-'} 上場${b.min}分鐘`;
+  let t=`【${L.label||'比賽'}】${L.a} ${g.sa} : ${g.sb} ${L.b}`+(g.qa&&g.qa.length>4?'（延長賽）':'')+`\n`;
+  if(g.tacA||g.tacB)t+=`戰術　${L.a}：${g.tacA||'無戰術'}　/　${L.b}：${g.tacB||'無戰術'}\n`;
+  if(g.qa)t+=`各節　${L.a}: ${g.qa.join(' / ')}　｜　${L.b}: ${g.qb.join(' / ')}\n`;
+  t+=`\n== ${L.a} ==\n`+(g.boxA||[]).map(line).join('\n');
+  t+=`\n\n== ${L.b} ==\n`+(g.boxB||[]).map(line).join('\n');
+  return t;
+}
+function showTextExport(text){
+  const bg=document.createElement("div");bg.className="modal-bg";
+  bg.innerHTML=`<div class="modal"><h3 style="margin-bottom:8px">📋 比賽資料（可複製給 GM 討論）</h3>
+    <textarea id="expTA" readonly style="width:100%;height:46vh;background:#0b0c10;color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:8px;font-family:Menlo,monospace;font-size:11px;white-space:pre;line-height:1.5">${text.replace(/</g,'&lt;')}</textarea>
+    <button class="btn block" data-x="copy" style="margin-top:8px">📋 複製全部文字</button>
+    <button class="btn ghost block" data-x="close" style="margin-top:6px">關閉</button></div>`;
+  document.body.appendChild(bg);
+  bg.addEventListener("click",e=>{const x=e.target.dataset.x;
+    if(x==="copy"){const ta=bg.querySelector("#expTA");try{ta.focus();ta.select();ta.setSelectionRange(0,99999);}catch(_){}
+      const ok=()=>toast("已複製到剪貼簿");
+      if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(text).then(ok,()=>{try{document.execCommand("copy");ok();}catch(_){toast("請長按文字手動複製");}});
+      else{try{document.execCommand("copy");ok();}catch(_){toast("請長按文字手動複製");}}}
+    else if(x==="close"||e.target===bg)bg.remove();
+  });
 }
 /* --- 觀戰重播：場上對戰圖示＋動作動畫＋逐球播報 --- */
 const WACT={

@@ -709,7 +709,7 @@ function buildDefMap(O,D,useMine){
 }
 const HANDLE={PG:1.0,SG:0.85,SF:0.68,PF:0.52,C:0.42},SIZE={PG:0,SG:0.5,SF:1.5,PF:3,C:4.5};
 function effW(w){return (w.p.ovr+(w.p.form||0)*0.6)*(0.72+0.28*Math.max(0,w.sta)/100);}
-function usageW(w,tac){let u=Math.pow(Math.max(1,w.p.pts),0.85)*(0.6+effW(w)/170);if(tac){if(tac.t==='feed'&&w.p.id===tac.target)u*=2.3;else if(tac.t==='share')u=Math.pow(u,0.62);}return u;}
+function usageW(w,tac){let u=Math.pow(Math.max(1,w.p.pts),0.85)*(0.6+effW(w)/170);if(tac){if(tac.t==='feed'&&w.p.id===tac.target)u*=2.1;else if(tac.t==='share')u=Math.pow(u,0.62);}return u;}
 function rebN(p){return (p.reb||3)+1;}
 const LnP=p=>p.name.split(' ').filter(x=>x!=='Jr'&&x!=='Jr.'&&x!=='II'&&x!=='III').pop();
 /* ===== 進攻戰術系統 ===== */
@@ -754,7 +754,7 @@ function subBench(T,q,margin){T.live=T.live.filter(w=>{if(w.pf>=6)w.fld=true;ret
   if(over&&under&&pace(over)>pace(under)+0.06)T.live[T.live.indexOf(over)]=under;}
 function trip(O,D){const tac=O.tac||{t:'none'},tovB=tac.t==='run'?1.08:1;const dmap=liveDefMap(O,D);
   const h=[...O.live].sort((a,b)=>(HANDLE[b.p.pos]+b.p.ovr*0.004)-(HANDLE[a.p.pos]+a.p.ovr*0.004))[0],hD=dmap[h.p.id]||D.live[0];
-  if(Math.random()<0.10){const df=D.live[Math.floor(Math.random()*D.live.length)];df.pf++;D.qf=(D.qf||0)+1;
+  if(Math.random()<0.085){const df=D.live[Math.floor(Math.random()*D.live.length)];df.pf++;D.qf=(D.qf||0)+1;
     if(D.qf>4){const fr=O.live[wpick(O.live.map(w=>usageW(w,{t:'none'})))];let m=0;for(let i=0;i<2;i++)if(Math.random()<ftPct(fr.p))m++;fr.fta+=2;fr.ftm+=m;fr.pts+=m;fr.qp+=m;return {pts:m,evs:[{k:'ft',oid:fr.p.id,did:df.p.id,t:LnP(fr.p)+' 團隊犯規兩罰中 '+m,d:{o:fr.p.id,fta:2,ftm:m,pts:m,pf:df.p.id}}]};}}
   if(Math.random()<Math.max(0.012,Math.min(0.12,0.055*tovB*((hD.p.stl||0.8)/1.2)/(HANDLE[h.p.pos]+h.p.ovr*0.004)))){hD.stl++;h.tov++;return {pts:0,evs:[{k:'stl',oid:h.p.id,did:hD.p.id,t:LnP(hD.p)+' 半場抄走 '+LnP(h.p),d:{o:h.p.id,tov:1,stl:hD.p.id}}]};}
   const S2=O.live[wpick(O.live.map(w=>usageW(w,tac)))],Dg=dmap[S2.p.id]||D.live[0];let passer=null;
@@ -766,14 +766,14 @@ function trip(O,D){const tac=O.tac||{t:'none'},tovB=tac.t==='run'?1.08:1;const d
   const sw=three?'三分':(Math.random()<0.45?'中距離':(Math.random()<0.6?'切入':'跳投'));
   if(Math.random()<Math.max(0,Math.min(0.22,(Dg.p.blk||0.5)*0.078*(three?0.4:1.2)*(tac.t==='inside'?1.25:1)))){Dg.blk++;S2.fga++;if(three)S2.t3a++;const rb=D.live[wpick(D.live.map(w=>rebN(w.p)))];rb.reb++;return {pts:0,evs:[{k:'blk',oid:S2.p.id,did:Dg.p.id,three,t:LnP(Dg.p)+' 火鍋蓋掉 '+LnP(S2.p)+'！',d:{o:S2.p.id,fga:1,t3a:three?1:0,blk:Dg.p.id,reb:rb.p.id}}]};}
   let _fm=Math.pow((S2.p.ftr!=null?S2.p.ftr:0.22)/0.22,1.4);if(tac.t==='foul')_fm*=1.3;if(tac.t==='inside')_fm*=1.3;
-  const fouled=Math.random()<0.068*Math.max(0.35,Math.min(3.3,_fm));
-  let mp=Math.max(0.28,Math.min(0.575,0.54+(effW(S2)-80)*0.0022+((S2.p.fg||47)-47)*0.003-((Dg.p.drtg||60)-62)*0.0022-(three?0.155:0)-Math.max(0,Math.min(0.18,(S2.pts-24)*0.008))+(tac.t==='inside'?0.009:0)+(tac.t==='run'?0.012:0)+(tac.t==='share'?0.014:0)+(tac.t==='feed'&&S2.p.id===tac.target?-0.016:0)));
+  const fouled=Math.random()<0.06*Math.max(0.35,Math.min(3.3,_fm));
+  let mp=Math.max(0.28,Math.min(0.575,0.54+(effW(S2)-80)*0.0022+((S2.p.fg||47)-47)*0.003-((Dg.p.drtg||60)-62)*0.0022-(three?0.155:0)-Math.max(0,Math.min(0.18,(S2.pts-24)*0.008))+(tac.t==='inside'?0.009:0)+(tac.t==='run'?0.012:0)+(tac.t==='share'?0.014:0)+(tac.t==='feed'&&S2.p.id===tac.target?-0.008:0)));
   if(Math.random()<mp){const val=three?3:2;S2.fga++;S2.fgm++;S2.pts+=val;S2.qp+=val;if(three){S2.t3a++;S2.t3m++;}
     const d={o:S2.p.id,fga:1,fgm:1,t3a:three?1:0,t3m:three?1:0,pts:val};let tail='';
     if(passer){passer.ast++;d.ast=passer.p.id;tail='（'+LnP(passer.p)+' 助攻）';}
-    if(fouled){S2.fta++;const fp=(Math.random()<0.35?D.live[Math.floor(Math.random()*D.live.length)]:Dg);fp.pf++;D.qf++;d.fta=1;d.pf=fp.p.id;let fm=0;if(Math.random()<ftPct(S2.p)){S2.ftm++;S2.pts++;S2.qp++;fm=1;}d.ftm=fm;d.pts+=fm;tail+=fm?('＋加罰('+(three?'4分打成':'2+1')+')'):'＋加罰落空';}
+    if(fouled){S2.fta++;const fp=(Math.random()<0.55?D.live[Math.floor(Math.random()*D.live.length)]:Dg);fp.pf++;D.qf++;d.fta=1;d.pf=fp.p.id;let fm=0;if(Math.random()<ftPct(S2.p)){S2.ftm++;S2.pts++;S2.qp++;fm=1;}d.ftm=fm;d.pts+=fm;tail+=fm?('＋加罰('+(three?'4分打成':'2+1')+')'):'＋加罰落空';}
     return {pts:d.pts,evs:[{k:three?'m3':'m2',off:true,oid:S2.p.id,did:Dg.p.id,three,t:LnP(S2.p)+' '+sw+(three?'命中':'命中 '+val+' 分')+tail,d}]};}
-  if(fouled){const n=three?3:2;let m=0;for(let i=0;i<n;i++)if(Math.random()<ftPct(S2.p))m++;S2.fta+=n;S2.ftm+=m;S2.pts+=m;S2.qp+=m;const fp=(Math.random()<0.35?D.live[Math.floor(Math.random()*D.live.length)]:Dg);fp.pf++;D.qf++;return {pts:m,evs:[{k:'ft',oid:S2.p.id,did:fp.p.id,t:LnP(S2.p)+' '+sw+'出手遭犯規，'+n+' 罰中 '+m,d:{o:S2.p.id,fta:n,ftm:m,pts:m,pf:fp.p.id}}]};}
+  if(fouled){const n=three?3:2;let m=0;for(let i=0;i<n;i++)if(Math.random()<ftPct(S2.p))m++;S2.fta+=n;S2.ftm+=m;S2.pts+=m;S2.qp+=m;const fp=(Math.random()<0.55?D.live[Math.floor(Math.random()*D.live.length)]:Dg);fp.pf++;D.qf++;return {pts:m,evs:[{k:'ft',oid:S2.p.id,did:fp.p.id,t:LnP(S2.p)+' '+sw+'出手遭犯規，'+n+' 罰中 '+m,d:{o:S2.p.id,fta:n,ftm:m,pts:m,pf:fp.p.id}}]};}
   S2.fga++;if(three)S2.t3a++;
   if(Math.random()<(tac.t==='inside'?0.27:0.22)){const rb=O.live[wpick(O.live.map(w=>(w.p.reb||3)+0.5))];rb.reb++;const missEv={k:'miss',oid:S2.p.id,three,t:'',d:{o:S2.p.id,fga:1,t3a:three?1:0,reb:rb.p.id}};
     if(Math.random()<0.52){rb.fga++;rb.fgm++;rb.pts+=2;rb.qp+=2;return {pts:2,evs:[missEv,{k:'m2',off:true,oid:rb.p.id,t:LnP(S2.p)+' '+sw+'不進，'+LnP(rb.p)+' 進攻籃板補進 2 分',d:{o:rb.p.id,fga:1,fgm:1,pts:2}}]};}

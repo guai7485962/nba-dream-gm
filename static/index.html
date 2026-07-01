@@ -1632,6 +1632,7 @@ function gameToText(L){
   let t=`【${L.label||'比賽'}】${L.a} ${g.sa} : ${g.sb} ${L.b}`+(g.qa&&g.qa.length>4?'（延長賽）':'')+`\n`;
   if(g.tacA||g.tacB)t+=`戰術　${L.a}：${g.tacA||'無戰術'}　/　${L.b}：${g.tacB||'無戰術'}\n`;
   if(g.qa)t+=`各節　${L.a}: ${g.qa.join(' / ')}　｜　${L.b}: ${g.qb.join(' / ')}\n`;
+  if(g.matchup&&g.matchup.length)t+=`\n防守對位（我方防守者 守 對手）\n`+g.matchup.map(m=>`  ${m.meN}(${m.mePos}·防${m.meDr}) 守 ${m.oppN}(${m.oppPos}·OVR${m.oppOvr})`).join('\n')+'\n';
   t+=`\n== ${L.a} ==\n`+(g.boxA||[]).map(line).join('\n');
   t+=`\n\n== ${L.b} ==\n`+(g.boxB||[]).map(line).join('\n');
   return t;

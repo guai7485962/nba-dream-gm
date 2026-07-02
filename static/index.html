@@ -834,7 +834,7 @@ function box(team,isMe,total){
 function applyFatigueInjury(team,isMe,win){
   const{st,bench}=lineupOf(team,isMe);const injured=[];
   [...st,...bench].forEach((p,i)=>{
-    p.sta=Math.max(0,p.sta-(i<5?9:5));
+    p.sta=Math.max(0,p.sta-(i<5?14:8));
     p.form=Math.max(-8,Math.min(8,(p.form||0)+(win?0.25:-0.25)));
     if(Math.random()<0.018){p.inj=ri(3,10);p.form=Math.max(-8,(p.form||0)-2);
       injured.push({name:p.name,games:p.inj,team:team.name||"",isMe});
@@ -844,7 +844,7 @@ function applyFatigueInjury(team,isMe,win){
 }
 function recoverAll(){
   const all=[S.roster,...S.ai.map(t=>t.roster),S.fa];
-  all.forEach(r=>r.forEach(p=>{p.sta=Math.min(100,p.sta+13);if(p.inj>0)p.inj--;}));
+  all.forEach(r=>r.forEach(p=>{p.sta=Math.min(100,p.sta+12);if(p.inj>0)p.inj--;}));
 }
 
 /* ============ 放置時鐘：補算所有到期場次 ============ */

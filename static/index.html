@@ -442,6 +442,21 @@ function nextOpponent(){
   const my=rd.find(([a,b])=>a===0||b===0);
   return my?teamOf(my[0]===0?my[1]:my[0]):null;
 }
+// 季後賽當前對手（進行中的系列賽裡有你、且未打完的那一組）
+function playoffOpponent(){
+  if(!S||!S.po)return null;
+  const has=s=>s&&(s.a===0||s.b===0)&&!seriesDone(s);
+  const opp=s=>teamOf(s.a===0?s.b:s.a);
+  if(has(S.po.finals))return opp(S.po.finals);
+  const cf=S.po[S.conf||"E"];
+  if(cf){
+    if(cf.stage==="bracket"&&cf.round){for(const s of cf.round)if(has(s))return opp(s);}
+    if(cf.stage==="playin"&&cf.pin){for(const g of [cf.pin.g1,cf.pin.g2,cf.pin.g3])if(has(g))return opp(g);}
+  }
+  return null;
+}
+// 目前對手（例行賽或季後賽通用）
+function curOpponent(){return S&&S.phase==="playoffs"?playoffOpponent():nextOpponent();}
 // 目前對手對位的完整指派（玩家覆寫優先，其餘就近配對）。回傳 {oppId: 我方先發物件}
 function currentDefMap(opp){
   const opSt=lineupOf(opp,false).st, mySt=lineupOf({roster:S.roster},true).st;
@@ -1359,7 +1374,7 @@ function vTeam(){
     h+=`<button class="btn block" data-act="startseason">🏀 開季！（之後不能再重抽）</button></div>`;
   }
   if(r.length)h+=courtView()+`<button class="btn ghost block" data-act="autostart" style="margin:0 0 10px">⚡ 一鍵最佳先發（依狀態自動排位）</button>`; // 半場先發圖 + 自動排
-  if(r.length)h+=matchupCard(nextOpponent()); // 賽前對位，邊排先發邊看
+  if(r.length)h+=matchupCard(curOpponent()); // 賽前對位（例行賽/季後賽通用）
   if(r.length)h+=tacticCard(); // 賽前進攻戰術
   if(!r.length)h+=`<div class="card empty">還沒有球員。<br>到「市場」分頁簽下你的第一批球員吧！</div>`;
   else{
@@ -1500,7 +1515,7 @@ function vSched(){
       <div class="slot-dots">${dots}</div>
       <div class="muted" style="text-align:center;margin-top:6px;font-size:11px">每天 00／04／08／12／16／20 點自動開打（6 場）</div>
     </div>`;
-    if(nextOpp)h+=matchupCard(nextOpp); // 賽前對位（與球隊頁同一張卡）
+    {const mo=nextOpp||(S.phase==="playoffs"?playoffOpponent():null);if(mo)h+=matchupCard(mo);} // 賽前對位（例行賽/季後賽通用）
   }
   const gh=(S.gameHist||[]).slice(0,20);
   if(gh.length){
@@ -1762,7 +1777,7 @@ function vLeague(){
   // 賽制說明（常駐）
   let h=`<div class="card" style="border-color:var(--maple)"><b style="color:var(--led);font-size:13px">🏆 季後賽賽制（東西區）</b>
     <div class="muted" style="font-size:11px;line-height:1.75;margin-top:5px">
-    例行賽 58 場依<b style="color:var(--ink)">勝率</b>分東西兩區排名。<b style="color:var(--ink)">各區前 6 直接晉級</b>，<b style="color:var(--ink)">7–10 名打 Play-in</b>（單場）搶最後 2 席。各區 8 隊系列賽<b style="color:var(--ink)">三戰兩勝</b>打到<b style="color:var(--ink)">分區冠軍</b>，東西冠軍再打<b style="color:var(--ink)">總冠軍賽</b>。你若沒進自己分區前 10 或中途被淘汰，會自動快轉到總冠軍出爐。</div></div>`;
+    例行賽 58 場依<b style="color:var(--ink)">勝率</b>分東西兩區排名。<b style="color:var(--ink)">各區前 6 直接晉級</b>，<b style="color:var(--ink)">7–10 名打 Play-in</b>（單場）搶最後 2 席。各區 8 隊系列賽<b style="color:var(--ink)">七戰四勝</b>打到<b style="color:var(--ink)">分區冠軍</b>，東西冠軍再打<b style="color:var(--ink)">總冠軍賽</b>。你若沒進自己分區前 10 或中途被淘汰，會自動快轉到總冠軍出爐。</div></div>`;
   const standTable=(cf,title)=>{
     const st=confStandings(cf);
     let b=`<h2 style="margin-top:14px">${title} <span class="tag">第 ${S.season} 季</span></h2><div class="card" style="padding:4px 8px">`;
@@ -1795,7 +1810,7 @@ function vLeague(){
       if(cf.stage==="done")b+=`<div style="font-size:12px;color:var(--led);font-weight:700">🏅 分區冠軍：${teamOf(cf.champ).name}</div>`;
       return b;
     };
-    h+=`<h2 style="margin-top:14px">季後賽對戰樹 <span class="tag">三戰兩勝・★=你</span></h2>`;
+    h+=`<h2 style="margin-top:14px">季後賽對戰樹 <span class="tag">七戰四勝・Play-in 單場・★=你</span></h2>`;
     h+=`<div class="card"><div style="font-weight:800;color:var(--ink);margin-bottom:4px">東區</div>${confBracket(S.po.E)}</div>`;
     h+=`<div class="card"><div style="font-weight:800;color:var(--ink);margin-bottom:4px">西區</div>${confBracket(S.po.W)}</div>`;
     if(S.po.finals)h+=`<div class="card" style="border-color:var(--led)"><div style="font-weight:800;color:var(--led);margin-bottom:4px">🏆 總冠軍賽（東區冠軍 vs 西區冠軍）</div>${box(S.po.finals)}</div>`;

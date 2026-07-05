@@ -477,7 +477,7 @@ let defSel=null;
 function tapMatchup(oppId){
   if(defSel===oppId){defSel=null;return render();}      // 再點同一個 → 取消選取
   if(!defSel){defSel=oppId;return render();}            // 第一次點 → 選取
-  const opp=nextOpponent();if(!opp){defSel=null;return render();}
+  const opp=curOpponent();if(!opp){defSel=null;return render();}
   const {opSt,mySt,map}=currentDefMap(opp);
   const full={};opSt.forEach(o=>{full[o.id]=(map[o.id]||mySt[0]).id;});
   const a=full[defSel],b=full[oppId];full[defSel]=b;full[oppId]=a; // 交換兩名防守者

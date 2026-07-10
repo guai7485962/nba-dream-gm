@@ -531,6 +531,34 @@ function power(team,isMe){
 }
 
 /* ============ 建立新遊戲 ============ */
+/* 近 15 年傳奇球星（退役為主，避免與現役資料庫重複）。格式同 DB 15 欄：
+   [name,pos,pts,reb,ast,stl,blk,fg,salary,team,ovr,def_rtg,player_id,t3r,ftr] */
+const LEGENDS=[
+["Kobe Bryant","SG",28.0,5.4,4.7,1.5,0.5,45.0,34.0,"LAL",95,40,977,0.22,0.30],
+["Tim Duncan","PF",21.0,11.5,3.0,0.8,2.3,50.0,30.0,"SAS",94,28,1495,0.01,0.28],
+["Dirk Nowitzki","PF",26.0,8.1,3.1,0.8,0.9,48.0,30.0,"DAL",93,52,1717,0.20,0.30],
+["Dwyane Wade","SG",26.6,5.0,6.4,1.7,1.1,49.0,29.0,"MIA",93,42,2548,0.08,0.42],
+["Kevin Garnett","PF",22.4,12.8,4.5,1.4,1.4,50.0,27.0,"BOS",92,26,708,0.02,0.24],
+["Dwight Howard","C",21.0,13.5,1.5,0.9,2.4,58.0,25.0,"ORL",91,26,2730,0.00,0.55],
+["Carmelo Anthony","SF",27.0,7.0,3.0,1.0,0.5,45.0,26.0,"NYK",90,55,2546,0.25,0.34],
+["Paul Pierce","SF",24.0,6.0,4.5,1.2,0.6,45.0,21.0,"BOS",90,48,1718,0.28,0.42],
+["Derrick Rose","PG",25.0,4.0,7.7,1.0,0.6,45.0,18.0,"CHI",90,55,201565,0.15,0.30],
+["Pau Gasol","C",19.0,10.0,3.5,0.5,1.6,51.0,19.0,"LAL",89,44,2200,0.05,0.28],
+["Steve Nash","PG",17.0,3.0,11.0,0.7,0.1,50.0,11.0,"PHX",89,60,959,0.30,0.20],
+["Ray Allen","SG",22.0,4.0,3.5,1.1,0.3,46.0,12.0,"BOS",88,50,951,0.45,0.24],
+["Tony Parker","PG",20.0,3.0,7.0,0.9,0.1,49.0,12.0,"SAS",88,55,2225,0.10,0.20],
+["Chris Bosh","PF",22.0,9.0,2.0,0.8,1.0,49.0,19.0,"MIA",88,48,2547,0.12,0.30],
+["Blake Griffin","PF",22.0,9.5,3.8,0.9,0.5,52.0,18.0,"LAC",88,50,201933,0.10,0.35],
+["Amar'e Stoudemire","PF",25.0,8.4,2.6,0.9,1.3,55.0,18.0,"PHX",88,55,2405,0.02,0.40],
+["LaMarcus Aldridge","PF",23.0,10.2,2.1,0.7,1.0,47.0,17.0,"POR",88,48,200746,0.06,0.24],
+["Manu Ginobili","SG",18.0,4.0,4.5,1.5,0.4,45.0,14.0,"SAS",87,48,1938,0.36,0.30],
+["Vince Carter","SF",24.0,5.5,4.0,1.2,0.7,45.0,15.0,"TOR",87,52,1713,0.28,0.32],
+["Zach Randolph","PF",20.0,11.0,2.0,0.8,0.3,47.0,16.0,"MEM",86,55,2216,0.05,0.28],
+["Marc Gasol","C",17.0,7.5,4.0,0.9,1.5,47.0,14.0,"MEM",86,38,201188,0.20,0.24],
+["Joakim Noah","C",12.0,11.3,4.0,1.2,1.5,48.0,10.0,"CHI",85,30,201149,0.00,0.30],
+["Rajon Rondo","PG",13.0,5.5,11.0,2.0,0.1,47.0,12.0,"BOS",85,42,200765,0.08,0.20],
+["Andre Iguodala","SF",15.0,5.5,5.5,1.7,0.5,46.0,12.0,"PHI",84,38,2738,0.28,0.24]
+];
 /* 生成底薪角色球員（虛構），給擴張隊開局墊底 */
 function genRoles(n){
   const arr=[];
@@ -552,23 +580,44 @@ function clonePlayer(src){
     name:src[0],pos:src[1],pts:src[2],reb:src[3],ast:src[4],stl:src[5],blk:src[6],fg:src[7],
     sal:src[8],team:src[9]||"",ovr,drtg:src[11]!=null?src[11]:60,pid:src[12]||0,t3r:src[13]!=null?src[13]:null,ftr:src[14]!=null?src[14]:null,sta:100,inj:0,yrs:0,pot:0,form:0,mv:0,mvH:[]};
 }
+/* 開局起手：從真實資料庫抽 n 名「中低段普通真實球員」（非虛構），不含指定排除名 */
+function giftRoles(n,exclude){
+  const ex=new Set(exclude||[]);
+  let pool=DB.filter(r=>{const o=(r[10]!=null?r[10]:calcOvr(r));return o>=64&&o<=77&&!ex.has(r[0]);});
+  if(pool.length<n)pool=DB.filter(r=>{const o=(r[10]!=null?r[10]:calcOvr(r));return o<=80&&!ex.has(r[0]);});
+  const arr=[],used=new Set();let guard=0;
+  while(arr.length<n&&guard++<3000&&pool.length){
+    const r=pool[ri(0,pool.length-1)];
+    if(used.has(r[0]))continue;
+    used.add(r[0]);
+    const c=clonePlayer(r);initMv(c);c.yrs=ri(1,3);
+    arr.push(c);
+  }
+  return arr;
+}
 /* 選秀（球星市場）：每天刷新 4 次、每次 10 名真實球員，開價隨身價浮動 → 可挖便宜大咖 */
 function rollDraftOffers(){
   const have=new Set(S.roster.map(p=>p.name));
   const cand=DB.filter(r=>!have.has(r[0]));
+  // 傳奇模式：把近 15 年傳奇球星也納入候選（尚未在隊上者）
+  const legends=(S&&S.legendMode)?LEGENDS.filter(r=>!have.has(r[0])):[];
   const offers=[],used=new Set();
   let guard=0;
   // cand 依 OVR 由高到低排序（DB 已排序）。指數<1 讓抽樣偏向「索引大＝OVR 低」，
   // 所以大咖（索引小）變稀有。數字越小、大咖越罕見（0.7 約等於偶爾出現一個球星）。
   const STAR_BIAS=0.7;
-  while(offers.length<DRAFT_OFFERS&&guard++<800&&cand.length){
-    const r=cand[Math.floor(Math.pow(Math.random(),STAR_BIAS)*cand.length)];
+  while(offers.length<DRAFT_OFFERS&&guard++<800&&(cand.length||legends.length)){
+    let r,isLeg=false;
+    // 傳奇模式：每個名額約 12% 機率改抽一名傳奇球星
+    if(legends.length&&Math.random()<0.12){r=legends[ri(0,legends.length-1)];isLeg=true;}
+    else r=cand[Math.floor(Math.pow(Math.random(),STAR_BIAS)*cand.length)];
     if(!r||used.has(r[0]))continue;
     used.add(r[0]);
-    const c=clonePlayer(r);initMv(c);
+    const c=clonePlayer(r);initMv(c);if(isLeg)c.legend=true;
     // 開價：平常接近身價；但有一個隨 OVR 遞減的小機率觸發「跳樓價」(<0.8)→ 💎
     const o=c.ovr;
-    const bChance=o>=90?0.05:o>=80?0.12:o>=72?0.30:0.45; // 90+ 只有 5%、80+ 12%，越低越常見
+    // 傳奇也保留「便宜年薪」的機率（略高，讓玩家偶爾能撿到划算傳奇）
+    const bChance=isLeg?(o>=90?0.16:0.24):(o>=90?0.05:o>=80?0.12:o>=72?0.30:0.45);
     let ask;
     if(Math.random()<bChance) ask=Math.max(2.0,+(c.mv*rnd(0.55,0.78)).toFixed(1)); // 跳樓價
     else                      ask=Math.max(2.0,+(c.mv*rnd(0.9,1.25)).toFixed(1));  // 一般開價
@@ -598,12 +647,13 @@ function makeGiftStar(){
   const top=Math.min(40,DB.length);
   const src=DB[ri(0,top-1)];
   const p=clonePlayer(src);initMv(p);p.yrs=ri(2,3);
+  p.sal=Math.max(2.0,+(p.sal*rnd(0.35,0.5)).toFixed(1)); // 核心明星起薪打折，開局好上手
   return p;
 }
 function rerollRoster(){
   if(S.phase!=="prep")return toast("開季後就不能再重抽球員了");
   const star=makeGiftStar();
-  const roster=genRoles(8);roster.push(star); // 重抽整批：8 角色 + 1 明星
+  const roster=giftRoles(8,[star.name]);roster.push(star); // 重抽整批：8 名隨機真實普通球員 + 1 明星
   S.roster=roster;S.giftId=star.id;
   S.starters=autoStarters(S.roster);
   save();render();toast("重抽一批球員（明星："+star.name+" OVR "+star.ovr+"）");
@@ -621,7 +671,7 @@ function testStarTeam(){
   S.starters=autoStarters(S.roster);
   save();render();toast("已組成 "+roster.length+" 人巨星測試隊（測試模式忽略薪資帽）");
 }
-function newGame(name,conf){
+function newGame(name,conf,legend){
   conf=(conf==="W")?"W":"E"; // 玩家選的分區
   // 30 支真實球隊：依真實 team 縮寫把球員分回各隊（維持真實陣容）
   const byTeam={};
@@ -632,12 +682,12 @@ function newGame(name,conf){
     return {name:t.name,abbr:t.abbr,c:t.c,conf:t.cf,roster,w:0,l:0};
   });
   const star=makeGiftStar();
-  const roster=genRoles(8);roster.push(star); // 8 名底薪角色 + 1 名贈送明星
+  const roster=giftRoles(8,[star.name]);roster.push(star); // 8 名隨機真實普通球員 + 1 名贈送明星
   S={team:name||"我的夢之隊",abbr:"DRM",conf,season:1,phase:"prep",round:0,w:0,l:0,
      roster,fa:[],ai,starters:[],log:[],lastGame:null,champs:[],
      po:null,draft:null,draftBoard:null,resign:null,nextAt:null,unseen:false,rookieN:0,
      mday:dayStart(Date.now()),teamMvH:[],lastSync:0,
-     myColor:"#d98e3f",gameHist:[],giftId:star.id};
+     myColor:"#d98e3f",gameHist:[],giftId:star.id,legendMode:!!legend};
   S.starters=autoStarters(S.roster);
   ensureDraft();
   allPlayers().forEach(initMv);
@@ -1290,7 +1340,7 @@ function render(){
   m.innerHTML={team:vTeam,market:vMarket,trade:vTrade,sched:vSched,league:vLeague}[tab]();
 }
 /* --- 開新檔 --- */
-let newConf="E",newName="";
+let newConf="E",newName="",newLegend=false;
 function vStart(){
   return `<div class="card" style="margin-top:30px;text-align:center;padding:26px 18px">
     <div style="font-size:40px">🏀</div>
@@ -1302,7 +1352,13 @@ function vStart(){
       <button class="btn ${newConf==="E"?"":"ghost"} block" data-act="conf" data-arg="E">東區 East</button>
       <button class="btn ${newConf==="W"?"":"ghost"} block" data-act="conf" data-arg="W">西區 West</button>
     </div>
-    <button class="btn block" data-act="new">開始建隊（${newConf==="E"?"東區":"西區"}）</button>
+    <div class="card" style="padding:12px;margin-bottom:12px;text-align:left;border-color:var(--maple-deep)">
+      <div class="flex" style="justify-content:space-between;align-items:center">
+        <div><b style="color:var(--led)">🏆 傳奇模式</b><div class="muted" style="font-size:11px;margin-top:2px">開啟後，近 15 年退役傳奇球星（Kobe、Duncan、Dirk、Wade…）有機率出現在選秀市場。其他玩法照舊。</div></div>
+        <button class="btn ${newLegend?"":"ghost"}" data-act="toglegend" style="min-width:64px;font-weight:800">${newLegend?"開 ON":"關 OFF"}</button>
+      </div>
+    </div>
+    <button class="btn block" data-act="new">開始建隊（${newConf==="E"?"東區":"西區"}${newLegend?"・傳奇":""}）</button>
     <p class="muted" style="margin-top:12px">薪資帽 $${CAP}M・季後賽：你的分區前 8（含 Play-in）→ 分區冠軍 → 總冠軍賽。</p>
   </div>`;
 }
@@ -1404,7 +1460,7 @@ function vMarket(){
     ${avatarHTML(p,38)}
     <div class="ovr ${ovrCls(p.ovr)}">${p.ovr}<small>OVR</small></div>
     <div class="p-info">
-      <div class="p-name">${p.name} ${p.bargain?'<span style="color:var(--led);font-weight:700">💎划算</span>':''}</div>
+      <div class="p-name">${p.legend?'<span style="color:#e0b64a;font-weight:800">🏆</span> ':''}${p.name} ${p.bargain?'<span style="color:var(--led);font-weight:700">💎划算</span>':''}</div>
       <div class="p-meta">${p.team?'<span style="color:var(--blue);font-weight:600">'+p.team+'</span>・':''}${p.pos}・身價 $${(p.mv||0).toFixed(1)}M</div>
     </div>
     <div class="p-sal" style="color:${p.bargain?'var(--led)':'var(--ink)'}">$${(p.ask||p.sal).toFixed(1)}M<small>開價</small></div>
@@ -1861,7 +1917,8 @@ document.addEventListener("click",e=>{
   const a=el.dataset.act,id=el.dataset.id,arg=el.dataset.arg;
   switch(a){
     case "conf":newName=($("#tn")||{value:""}).value;newConf=arg;render();break;
-    case "new":newGame(($("#tn")||{value:""}).value.trim(),newConf);break;
+    case "toglegend":newName=($("#tn")||{value:""}).value;newLegend=!newLegend;render();break;
+    case "new":newGame(($("#tn")||{value:""}).value.trim(),newConf,newLegend);break;
     case "tab":tab=arg;if(arg==="sched"&&S)S.unseen=false;render();break;
     case "startseason":startSeasonClock();break;
     case "starter":togStarter(id);break;

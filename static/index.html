@@ -1236,10 +1236,18 @@ async function load(){try{const r=await window.storage.get("nba_gm_idle");if(r&&
       if(r){p.pts=r[2];p.reb=r[3];p.ast=r[4];p.stl=r[5];p.blk=r[6];p.fg=r[7];
         if(r[1])p.pos=r[1];if(r[10]!=null)p.ovr=r[10];if(r[11]!=null)p.drtg=r[11];if(r[12])p.pid=r[12];if(r[13]!=null)p.t3r=r[13];if(r[14]!=null)p.ftr=r[14];if(!p.team)p.team=r[9]||"";}
       if(p.drtg==null)p.drtg=60;};
-    allPlayers().forEach(_fix);
-    if(S.draft&&S.draft.pool)S.draft.pool.forEach(_fix);
+    // 傳奇球星：依名字用最新 LEGENDS 校正能力值（保留已簽約薪資/年限），修正舊存檔的錯誤數值
+    const _byLeg={};LEGENDS.forEach(r=>{_byLeg[r[0]]=r;});
+    const _fixLeg=p=>{if(!p)return;const r=_byLeg[p.name];if(!r)return;
+      p.pts=r[2];p.reb=r[3];p.ast=r[4];p.stl=r[5];p.blk=r[6];p.fg=r[7];
+      p.pos=r[1];p.ovr=r[10];p.drtg=r[11];if(r[12])p.pid=r[12];p.t3r=r[13];p.ftr=r[14];
+      p.legend=true;p.mv=mvBase(p);};
+    allPlayers().forEach(p=>{_fix(p);_fixLeg(p);});
+    if(S.draft&&S.draft.pool)S.draft.pool.forEach(p=>{_fix(p);_fixLeg(p);});
+    if(S.draftBoard&&S.draftBoard.offers)S.draftBoard.offers.forEach(p=>{_fix(p);_fixLeg(p);});
     allPlayers().forEach(initMv);
     if(S.draft&&S.draft.pool)S.draft.pool.forEach(initMv);
+    if(S.draftBoard&&S.draftBoard.offers)S.draftBoard.offers.forEach(initMv);
   }
 }
 let syncing=false;

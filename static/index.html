@@ -422,17 +422,20 @@ function healthy(r){return r.filter(p=>p.inj<=0);}
 function eff(p){return (p.ovr+(p.form||0)*0.6)*(0.72+0.28*Math.max(0,p.sta)/100);}
 
 /* ============ 先發與戰力 ============ */
-function autoStarters(r){return healthy(r).sort((a,b)=>b.ovr-a.ovr).slice(0,5).map(p=>p.id);} // 純 OVR 取前 5
+function isResting(id){return typeof S!=='undefined'&&S&&Array.isArray(S.rest)&&S.rest.includes(id);}
+function autoStarters(r){return healthy(r).filter(p=>!isResting(p.id)).sort((a,b)=>b.ovr-a.ovr).slice(0,5).map(p=>p.id);} // 純 OVR 取前 5（排除輪休）
 function lineupOf(team,isMe){
   const r=team.roster;
-  let st=isMe?(S.starters||[]).map(id=>r.find(p=>p.id===id)).filter(p=>p&&p.inj<=0):[];
+  // 我方：輪休名單的球員完全不上場（多回體力）；對手不受影響
+  const canPlay=p=>p&&p.inj<=0&&!(isMe&&isResting(p.id));
+  let st=isMe?(S.starters||[]).map(id=>r.find(p=>p.id===id)).filter(canPlay):[];
   if(!isMe||st.length<5){
     const have=new Set(st.map(p=>p.id));
-    const fill=healthy(r).filter(p=>!have.has(p.id)).sort((a,b)=>eff(b)-eff(a));
+    const fill=r.filter(p=>canPlay(p)&&!have.has(p.id)).sort((a,b)=>eff(b)-eff(a));
     while(st.length<5&&fill.length)st.push(fill.shift());
   }
   const ids=new Set(st.map(p=>p.id));
-  const bench=healthy(r).filter(p=>!ids.has(p.id)).sort((a,b)=>eff(b)-eff(a)).slice(0,5);
+  const bench=r.filter(p=>canPlay(p)&&!ids.has(p.id)).sort((a,b)=>eff(b)-eff(a)).slice(0,5);
   return{st,bench};
 }
 // 下一場對手（例行賽）
@@ -704,7 +707,7 @@ function newGame(name,conf,legend){
      roster,fa:[],ai,starters:[],log:[],lastGame:null,champs:[],
      po:null,draft:null,draftBoard:null,resign:null,nextAt:null,unseen:false,rookieN:0,
      mday:dayStart(Date.now()),teamMvH:[],lastSync:0,
-     myColor:"#d98e3f",gameHist:[],giftId:star.id,legendMode:!!legend};
+     myColor:"#d98e3f",gameHist:[],giftId:star.id,legendMode:!!legend,rest:[]};
   S.starters=autoStarters(S.roster);
   ensureDraft();
   allPlayers().forEach(initMv);
@@ -927,6 +930,8 @@ function applyFatigueInjury(team,isMe,win){
 function recoverAll(){
   const all=[S.roster,...S.ai.map(t=>t.roster),S.fa];
   all.forEach(r=>r.forEach(p=>{p.sta=Math.min(100,p.sta+12);if(p.inj>0)p.inj--;}));
+  // 輪休球員完全沒上場 → 額外多回體力
+  if(Array.isArray(S.rest)&&S.rest.length)S.roster.forEach(p=>{if(S.rest.includes(p.id))p.sta=Math.min(100,p.sta+10);});
 }
 
 /* ============ 放置時鐘：補算所有到期場次 ============ */
@@ -1238,6 +1243,7 @@ async function load(){try{const r=await window.storage.get("nba_gm_idle");if(r&&
     if(!S.ai||S.ai.length!==NBA_TEAMS.length){S=null;return;}
     if(S.lastSync==null)S.lastSync=0;
     if(!S.gameHist)S.gameHist=[];
+    if(!Array.isArray(S.rest))S.rest=[];
     if(!S.myColor)S.myColor="#d98e3f";
     if(!S.draftBoard||S.draftBoard.slot==null)S.draftBoard=null;
     ensureDraft();
@@ -1314,6 +1320,7 @@ function staBar(p){
 }
 function pTags(p){
   let t="";
+  if(isResting(p.id))t+=`<span class="pill" style="background:#2a3550;color:#9db4e0">💤 輪休中</span> `;
   if(p.inj>0)t+=`<span class="pill red">傷 ${p.inj}場</span> `;
   if(p.pot&&p.ovr<p.pot)t+=`<span class="pill gold">潛力 ${p.pot}</span> `;
   return t;
@@ -1397,10 +1404,29 @@ function togStarter(id){
   else{
     if(p.inj>0)return toast(p.name+" 受傷中，無法排先發");
     if(S.starters.length>=5)return toast("先發已滿 5 人，先取消一人");
+    S.rest=(S.rest||[]).filter(x=>x!==id); // 排先發就取消輪休（不能又休息又先發）
     S.starters.push(id);
   }
   S.defByOpp={}; // 換先發 → 清掉舊的手動防守指派，避免殘留出現重複
   save();render();
+}
+/* 輪休開關：讓球員完全不上場，下一場（及之後）多回體力，直到取消 */
+function togRest(id){
+  const p=S.roster.find(x=>x.id===id);
+  if(!p)return;
+  S.rest=(S.rest||[]).filter(x=>S.roster.some(pp=>pp.id===x)); // 清掉已不在隊上的殘留
+  if(S.rest.includes(id)){ // 取消輪休
+    S.rest=S.rest.filter(x=>x!==id);
+    save();render();toast(p.name+" 解除輪休，下一場可上場");
+    return;
+  }
+  // 開啟輪休：確保仍有足夠可上場球員（先發 5 ＋至少 1 替補）
+  const avail=healthy(S.roster).filter(x=>!S.rest.includes(x.id)&&x.id!==id).length;
+  if(avail<6)return toast("至少要保留 6 名可上場球員，無法讓 "+p.name+" 輪休");
+  S.rest.push(id);
+  S.starters=(S.starters||[]).filter(x=>x!==id); // 輪休就退出先發
+  S.defByOpp={};
+  save();render();toast(p.name+" 開始輪休（不上場，體力多回復），記得補回先發");
 }
 /* ===== 半場先發圖（純顯示：把先發 5 人依位置排到場上；不限位置、避免排不出陣容） ===== */
 const COURT_SPOTS=[["PG",14,50],["SG",36,83],["SF",36,17],["PF",70,31],["C",80,50]]; // [標籤, top%, left%]
@@ -1466,9 +1492,12 @@ function vTeam(){
       +POSITIONS.map(p=>`<button class="btn sm ${teamPos===p?"":"ghost"}" data-act="tpos" data-arg="${p}">${p} ${cnt[p]}</button>`).join("")
       +`</div>`;
     const list=teamPos==="ALL"?r:r.filter(p=>p.pos===teamPos);
-    h+=`<div class="card" style="padding:2px 4px">`+(list.length?list.map(p=>`<div class="${(S.starters||[]).includes(p.id)?"starter":""}" data-act="starter" data-id="${p.id}">${pRow(p,`<button class="btn sm danger" data-act="release" data-id="${p.id}">釋出</button>`,true)}</div>`).join(""):`<div class="empty">這個位置沒有球員</div>`)+`</div>`;
+    const rowBtns=p=>{const rest=isResting(p.id);return `<div style="display:flex;flex-direction:column;gap:4px">`
+      +`<button class="btn sm ${rest?'':'ghost'}" data-act="rest" data-id="${p.id}" style="${rest?'background:#3a4a70;border-color:#3a4a70;color:#dbe6ff':''}">${rest?'▶ 上場':'💤 休息'}</button>`
+      +`<button class="btn sm danger" data-act="release" data-id="${p.id}">釋出</button></div>`;};
+    h+=`<div class="card" style="padding:2px 4px">`+(list.length?list.map(p=>`<div class="${(S.starters||[]).includes(p.id)?"starter":""}" data-act="starter" data-id="${p.id}">${pRow(p,rowBtns(p),true)}</div>`).join(""):`<div class="empty">這個位置沒有球員</div>`)+`</div>`;
   }
-  h+=`<p class="muted">綠框 = 先發五人（隨時可調）。沒排滿時系統自動以最佳狀態球員補位。先發消耗較多體力（-15／場，替補 -8），體力每場回 12——記得輪休！</p>`;
+  h+=`<p class="muted">綠框 = 先發五人（隨時可調）。沒排滿時系統自動以最佳狀態球員補位。先發消耗較多體力（-14／場，替補 -8），體力每場回 12。按球員的「💤 休息」讓他完全不上場，體力回復更快（+22／場），養好再按「▶ 上場」歸隊。</p>`;
   h+=`<button class="btn ghost block" data-act="reset">🗑 刪除存檔重新開始</button>`;
   return h;
 }
@@ -1947,6 +1976,7 @@ document.addEventListener("click",e=>{
     case "tab":tab=arg;if(arg==="sched"&&S)S.unseen=false;render();break;
     case "startseason":startSeasonClock();break;
     case "starter":togStarter(id);break;
+    case "rest":togRest(id);break;
     case "autostart":S.starters=autoStarters(S.roster);S.defByOpp={};save();render();toast("已依狀態自動排出最佳先發");break;
     case "assigndef":tapMatchup(id||arg);break;
     case "settactic":{const t=arg;let tgt=(S.tactic&&S.tactic.target)||null;if(t==='feed'&&!tgt){const st=lineupOf({roster:S.roster},true).st.slice().sort((a,b)=>(b.pts||0)-(a.pts||0));tgt=st[0]?st[0].id:null;}S.tactic={t,target:t==='feed'?tgt:null};save();render();toast("戰術："+tacName({t}));break;}

@@ -34,6 +34,7 @@ h2 .tag{font-size:11px;color:var(--dim);font-weight:400;margin-left:8px}
 .p-row{display:flex;align-items:center;gap:10px;padding:9px 10px;border-bottom:1px solid var(--line);flex-wrap:wrap}
 .p-row:last-child{border-bottom:none}
 .p-row2{flex-basis:100%;display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin-top:5px}
+.p-tags{flex-basis:100%;display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:1px}
 .ovr{min-width:40px;height:40px;border-radius:9px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-weight:800;font-size:16px;background:var(--panel2);border:1px solid var(--line);line-height:1}
 .ovr small{font-size:8px;font-weight:500;color:var(--dim);margin-top:1px}
 .ovr.elite{color:#ffd166;border-color:#8a6a1f;background:#2a2415}   /* 金：頂級 */
@@ -1342,7 +1343,7 @@ function pRow(p,btnHtml,showSta){
     <div class="p-sal">$${p.sal}M<small>年薪</small></div>
     ${btnHtml||""}
     <div class="p-row2">
-      ${pTags(p)}
+      ${(()=>{const tg=pTags(p);return tg?`<div class="p-tags">${tg}</div>`:"";})()}
       <div class="p-stat"><span>得<b>${p.pts}</b></span><span>籃<b>${p.reb}</b></span><span>助<b>${p.ast}</b></span><span>防<b class="d">${p.drtg||'-'}</b></span></div>
       ${mvChip(p)}
       ${showSta?staBar(p):""}

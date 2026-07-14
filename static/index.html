@@ -31,10 +31,13 @@ nav button .badge{position:absolute;top:6px;right:18%;width:8px;height:8px;borde
 h2{font-size:15px;margin:6px 2px 10px;letter-spacing:.5px}
 h2 .tag{font-size:11px;color:var(--dim);font-weight:400;margin-left:8px}
 .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:10px}
-.p-row{display:flex;align-items:center;gap:10px;padding:9px 10px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+.p-row{display:flex;flex-direction:column;gap:7px;padding:10px;border-bottom:1px solid var(--line)}
 .p-row:last-child{border-bottom:none}
-.p-row2{flex-basis:100%;display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin-top:5px}
-.p-tags{flex-basis:100%;display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:1px}
+.p-top{display:flex;align-items:center;gap:10px}
+.p-row2{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.p-tags{flex-basis:100%;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.p-actions{display:flex;gap:8px}
+.p-actions>.btn{flex:1}
 .ovr{min-width:40px;height:40px;border-radius:9px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-weight:800;font-size:16px;background:var(--panel2);border:1px solid var(--line);line-height:1}
 .ovr small{font-size:8px;font-weight:500;color:var(--dim);margin-top:1px}
 .ovr.elite{color:#ffd166;border-color:#8a6a1f;background:#2a2415}   /* 金：頂級 */
@@ -42,7 +45,7 @@ h2 .tag{font-size:11px;color:var(--dim);font-weight:400;margin-left:8px}
 .ovr.solid{color:var(--blue)}                                       /* 藍：先發 */
 .ovr.ok{color:var(--good)}                                          /* 綠：輪替 */
 .p-info{flex:1;min-width:0}
-.p-name{font-weight:700;font-size:14.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.p-name{font-weight:700;font-size:14.5px;line-height:1.2}
 .p-meta{font-size:11px;color:var(--dim);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .p-stat{display:flex;gap:13px;font-size:11px;color:var(--dim);margin-top:4px;white-space:nowrap;overflow:hidden}
 .p-stat b{color:var(--ink);font-weight:700;font-size:12.5px;margin-left:2px;font-family:Menlo,monospace}
@@ -1333,21 +1336,24 @@ function mvChip(p){
   return `<div class="mv-chip">身價 <span class="v">$${(p.mv||0).toFixed(1)}M</span> <span class="${cls}">${arrow}${Math.abs(c).toFixed(1)}%</span></div>`;
 }
 function pRow(p,btnHtml,showSta){
+  const tg=pTags(p);
   return `<div class="p-row" data-pid="${p.id}">
-    ${avatarHTML(p,38)}
-    <div class="ovr ${ovrCls(p.ovr)}">${p.ovr}<small>OVR</small></div>
-    <div class="p-info">
-      <div class="p-name">${formIc(p)}${p.name}</div>
-      <div class="p-meta">${p.team?'<span style="color:var(--blue);font-weight:600">'+p.team+'</span>・':''}${p.pos}・約剩 ${Math.max(0,p.yrs)} 年</div>
+    <div class="p-top">
+      ${avatarHTML(p,38)}
+      <div class="ovr ${ovrCls(p.ovr)}">${p.ovr}<small>OVR</small></div>
+      <div class="p-info">
+        <div class="p-name">${formIc(p)}${p.name}</div>
+        <div class="p-meta">${p.team?'<span style="color:var(--blue);font-weight:600">'+p.team+'</span>・':''}${p.pos}・約剩 ${Math.max(0,p.yrs)} 年</div>
+      </div>
+      <div class="p-sal">$${p.sal}M<small>年薪</small></div>
     </div>
-    <div class="p-sal">$${p.sal}M<small>年薪</small></div>
-    ${btnHtml||""}
     <div class="p-row2">
-      ${(()=>{const tg=pTags(p);return tg?`<div class="p-tags">${tg}</div>`:"";})()}
+      ${tg?`<div class="p-tags">${tg}</div>`:""}
       <div class="p-stat"><span>得<b>${p.pts}</b></span><span>籃<b>${p.reb}</b></span><span>助<b>${p.ast}</b></span><span>防<b class="d">${p.drtg||'-'}</b></span></div>
       ${mvChip(p)}
       ${showSta?staBar(p):""}
     </div>
+    ${btnHtml?`<div class="p-actions">${btnHtml}</div>`:""}
   </div>`;
 }
 function fmtT(ms){const d=new Date(ms);return (d.getMonth()+1)+"/"+d.getDate()+" "+String(d.getHours()).padStart(2,"0")+":"+String(d.getMinutes()).padStart(2,"0");}
@@ -1493,9 +1499,9 @@ function vTeam(){
       +POSITIONS.map(p=>`<button class="btn sm ${teamPos===p?"":"ghost"}" data-act="tpos" data-arg="${p}">${p} ${cnt[p]}</button>`).join("")
       +`</div>`;
     const list=teamPos==="ALL"?r:r.filter(p=>p.pos===teamPos);
-    const rowBtns=p=>{const rest=isResting(p.id);return `<div style="display:flex;flex-direction:column;gap:4px">`
+    const rowBtns=p=>{const rest=isResting(p.id);return ``
       +`<button class="btn sm ${rest?'':'ghost'}" data-act="rest" data-id="${p.id}" style="${rest?'background:#3a4a70;border-color:#3a4a70;color:#dbe6ff':''}">${rest?'▶ 上場':'💤 休息'}</button>`
-      +`<button class="btn sm danger" data-act="release" data-id="${p.id}">釋出</button></div>`;};
+      +`<button class="btn sm danger" data-act="release" data-id="${p.id}">釋出</button>`;};
     h+=`<div class="card" style="padding:2px 4px">`+(list.length?list.map(p=>`<div class="${(S.starters||[]).includes(p.id)?"starter":""}" data-act="starter" data-id="${p.id}">${pRow(p,rowBtns(p),true)}</div>`).join(""):`<div class="empty">這個位置沒有球員</div>`)+`</div>`;
   }
   h+=`<p class="muted">綠框 = 先發五人（隨時可調）。沒排滿時系統自動以最佳狀態球員補位。先發消耗較多體力（-14／場，替補 -8），體力每場回 12。按球員的「💤 休息」讓他完全不上場，體力回復更快（+22／場），養好再按「▶ 上場」歸隊。</p>`;
@@ -1943,7 +1949,7 @@ function vOffseason(){
     S.resign.ids.forEach(id=>{
       const p=S.roster.find(x=>x.id===id);if(!p)return;
       const ns=marketSal(p);
-      h+=pRow(p,`<div style="display:flex;flex-direction:column;gap:5px"><button class="btn sm" data-act="resign" data-id="${p.id}" data-keep="1">續約 $${ns}M</button><button class="btn sm danger" data-act="resign" data-id="${p.id}" data-keep="0">放走</button></div>`);
+      h+=pRow(p,`<button class="btn sm" data-act="resign" data-id="${p.id}" data-keep="1">續約 $${ns}M</button><button class="btn sm danger" data-act="resign" data-id="${p.id}" data-keep="0">放走</button>`);
     });
     h+=`</div>`;
     return h;

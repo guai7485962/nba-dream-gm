@@ -22,42 +22,82 @@ header{padding:14px 16px 10px;border-bottom:2px solid var(--maple-deep);backgrou
 .cap-bar{height:6px;background:var(--panel2);border-radius:3px;margin-top:8px;overflow:hidden}
 .cap-fill{height:100%;background:linear-gradient(90deg,var(--maple),#e8b25f);border-radius:3px;transition:width .3s}
 .cap-fill.over{background:var(--bad)}
-main{flex:1;padding:12px 12px 84px}
+main{flex:1;padding:16px 12px 90px}
 nav{position:fixed;bottom:0;left:0;right:0;z-index:30;display:flex;max-width:520px;margin:0 auto;background:#14161d;border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom)}
 nav button{flex:1;background:none;border:none;color:var(--dim);padding:10px 0 12px;font-size:12px;font-family:inherit;display:flex;flex-direction:column;align-items:center;gap:3px;position:relative}
 nav button .ic{font-size:18px;line-height:1}
 nav button.on{color:var(--led);font-weight:700}
 nav button .badge{position:absolute;top:6px;right:18%;width:8px;height:8px;border-radius:50%;background:var(--bad)}
+h1{font-size:24px;line-height:1.15;letter-spacing:.2px}
 h2{font-size:15px;margin:6px 2px 10px;letter-spacing:.5px}
 h2 .tag{font-size:11px;color:var(--dim);font-weight:400;margin-left:8px}
 .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:10px}
-.p-row{display:flex;align-items:center;gap:10px;padding:9px 10px;border-bottom:1px solid var(--line);flex-wrap:wrap}
-.p-row:last-child{border-bottom:none}
-.p-card{display:flex;flex-direction:column;gap:7px;padding:10px;border-bottom:1px solid var(--line)}
-.p-card:last-child{border-bottom:none}
-.p-top{display:flex;align-items:center;gap:10px}
-.p-row2{flex-basis:100%;display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin-top:2px}
-.p-tags{flex-basis:100%;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
-.p-actions{display:flex;gap:8px}
+.page-head{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;margin:2px 2px 14px}
+.page-kicker{font-size:10px;font-weight:800;letter-spacing:1.8px;color:var(--maple);text-transform:uppercase;margin-bottom:4px}
+.page-sub{font-size:12px;color:var(--dim);line-height:1.5;margin-top:5px}
+.hero-metric{flex-shrink:0;min-width:92px;text-align:right;padding:9px 11px;border-radius:12px;background:linear-gradient(145deg,#242016,#171920);border:1px solid #5b4827}
+.hero-metric b{display:block;color:var(--led);font:800 19px/1.1 Menlo,monospace}
+.hero-metric small{font-size:9.5px;color:var(--dim);letter-spacing:.5px}
+.summary-grid{display:grid;grid-template-columns:1.35fr .9fr .9fr;gap:7px;margin-bottom:12px}
+.summary-box{min-width:0;background:linear-gradient(145deg,#20242e,#171a22);border:1px solid var(--line);border-radius:12px;padding:10px}
+.summary-box .label{font-size:10px;color:var(--dim);margin-bottom:4px;white-space:nowrap}
+.summary-box .value{font:800 16px/1.2 Menlo,monospace;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.summary-box .value.accent{color:var(--led)}
+.summary-box .hint{font-size:9px;color:var(--dim);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.section-head{display:flex;align-items:flex-end;justify-content:space-between;gap:10px;margin:17px 2px 9px}
+.section-head h2{font-size:17px;margin:0}
+.section-head p{font-size:11px;color:var(--dim);line-height:1.4;margin-top:3px}
+.section-count{font:700 11px Menlo,monospace;color:var(--dim);padding:4px 8px;border:1px solid var(--line);border-radius:99px;white-space:nowrap}
+.filter-bar{display:flex;gap:6px;overflow-x:auto;padding:1px 1px 8px;margin-bottom:2px;scrollbar-width:none}
+.filter-bar::-webkit-scrollbar{display:none}
+.filter-bar .btn{flex:0 0 auto}
+.player-list{display:grid;gap:9px;margin-bottom:12px}
+.roster-entry{position:relative;border-radius:14px}
+.p-card{display:flex;flex-direction:column;gap:10px;padding:12px;background:linear-gradient(145deg,#1d212b,#171a22);border:1px solid var(--line);border-radius:14px;box-shadow:0 5px 18px rgba(0,0,0,.13);overflow:hidden}
+.p-card:active{border-color:#464d5c}
+.roster-entry.starter .p-card{border-color:#39764a;box-shadow:inset 3px 0 0 var(--good),0 5px 18px rgba(0,0,0,.13);background:linear-gradient(145deg,#17261d,#171a22 58%)}
+.p-top{display:flex;align-items:center;gap:9px;min-width:0}
+.p-row2{display:flex;align-items:center;justify-content:space-between;gap:9px;flex-wrap:wrap}
+.p-tags{display:flex;align-items:center;gap:5px;flex-wrap:wrap}
+.p-details{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;padding-top:1px}
+.p-actions{display:flex;gap:8px;padding-top:9px;border-top:1px solid #292e39}
 .p-actions>.btn{flex:1}
-.ovr{min-width:40px;height:40px;border-radius:9px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-weight:800;font-size:16px;background:var(--panel2);border:1px solid var(--line);line-height:1}
+.player-avatar{position:relative;display:grid;place-items:center;flex:0 0 auto;border:1px solid #343b49;border-radius:50%;overflow:hidden;background:linear-gradient(145deg,#2b3240,#1b202a);color:#c5cfdf;font:800 11px/1 Menlo,monospace;letter-spacing:-.5px}
+.player-avatar img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center top;background:#242a35}
+.ovr{min-width:42px;height:42px;border-radius:10px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-weight:800;font-size:16px;background:var(--panel2);border:1px solid var(--line);line-height:1;box-shadow:inset 0 1px 0 rgba(255,255,255,.03)}
 .ovr small{font-size:8px;font-weight:500;color:var(--dim);margin-top:1px}
 .ovr.elite{color:#ffd166;border-color:#8a6a1f;background:#2a2415}   /* 金：頂級 */
 .ovr.great{color:#c79bff;border-color:#5a3a8a;background:#211a2e}   /* 紫：明星 */
 .ovr.solid{color:var(--blue)}                                       /* 藍：先發 */
 .ovr.ok{color:var(--good)}                                          /* 綠：輪替 */
 .p-info{flex:1;min-width:0}
-.p-name{font-weight:700;font-size:14.5px;line-height:1.2}
+.p-name{font-weight:800;font-size:14.5px;line-height:1.25;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .p-meta{font-size:11px;color:var(--dim);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.p-stat{display:flex;gap:13px;font-size:11px;color:var(--dim);margin-top:4px;white-space:nowrap;overflow:hidden}
+.p-stat{display:flex;gap:13px;font-size:11px;color:var(--dim);white-space:nowrap;overflow:hidden}
 .p-stat b{color:var(--ink);font-weight:700;font-size:12.5px;margin-left:2px;font-family:Menlo,monospace}
+.p-card>.p-stat{display:grid;grid-template-columns:repeat(4,1fr);gap:5px;padding:7px;background:#13161d;border:1px solid #282d37;border-radius:10px}
+.p-card>.p-stat span{text-align:center;min-width:0;font-size:9.5px;color:var(--dim);line-height:1.2}
+.p-card>.p-stat b{display:block;color:var(--ink);font:700 13px/1.3 Menlo,monospace;margin:2px 0 0}
 .p-stat .d{color:var(--blue)}
 .sta{height:5px;background:var(--panel2);border-radius:3px;overflow:hidden;width:110px;flex:0 0 110px}
 .sta-wrap{display:flex;align-items:center;gap:6px;font-size:10.5px;color:var(--dim)}
 .sta i{display:block;height:100%;border-radius:2px;background:var(--good)}
 .sta i.mid{background:var(--led)} .sta i.low{background:var(--bad)}
-.p-sal{font-size:13px;font-weight:700;text-align:right;white-space:nowrap}
+.p-sal{font:800 13px/1.2 Menlo,monospace;text-align:right;white-space:nowrap;color:var(--led)}
 .p-sal small{display:block;font-size:10px;color:var(--dim);font-weight:400}
+.market-card{border-color:#3b3529;background:linear-gradient(145deg,#242016,#191b22 54%)}
+.market-card.bargain{border-color:#8a6a1f;box-shadow:inset 3px 0 0 var(--led),0 6px 20px rgba(0,0,0,.16)}
+.market-price{font-size:10.5px;color:var(--dim)}
+.market-price b{color:var(--ink);font-family:Menlo,monospace;margin-left:3px}
+.price-gap{font:800 10px/1 Menlo,monospace;padding:5px 7px;border-radius:99px;border:1px solid var(--line);white-space:nowrap}
+.price-gap.good{color:#ffd166;background:#2a2415;border-color:#785f21}
+.price-gap.bad{color:#ff8a8a;background:#2b191b;border-color:#673236}
+.price-gap.fair{color:var(--dim);background:#171a22}
+.market-refresh{display:grid;grid-template-columns:1fr auto;align-items:center;gap:12px;background:linear-gradient(135deg,#222630,#171a22);border-color:#3b424f}
+.position-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
+.position-chip{text-align:center;padding:7px 3px;background:#14171e;border:1px solid var(--line);border-radius:9px;font-size:10px;color:var(--dim)}
+.position-chip b{display:block;font:800 15px Menlo,monospace;color:var(--led);margin-top:2px}
+.position-chip.thin{border-color:#5a2e2e;background:#27191b}.position-chip.thin b{color:var(--bad)}
 .btn{background:var(--maple);color:#1a1208;border:none;border-radius:9px;padding:10px 14px;font-size:14px;font-weight:800;font-family:inherit;letter-spacing:.5px}
 .btn:active{transform:scale(.97)}
 .btn.ghost{background:var(--panel2);color:var(--ink);border:1px solid var(--line);font-weight:600}
@@ -162,7 +202,7 @@ table.lbx{border-collapse:collapse;width:100%;font-family:Menlo,monospace;font-s
 .res-row:last-child{border:none}
 .res-row .sc{font-family:Menlo,monospace;font-weight:700}
 .sel{outline:2px solid var(--led);outline-offset:-2px;border-radius:10px;background:#241f12}
-.starter{outline:2px solid var(--good);outline-offset:-2px;border-radius:10px;background:#13231a}
+.starter:not(.roster-entry){outline:2px solid var(--good);outline-offset:-2px;border-radius:10px;background:#13231a}
 .modal-bg{position:fixed;inset:0;background:rgba(5,6,9,.82);z-index:50;display:flex;align-items:flex-end;justify-content:center}
 .modal{background:var(--panel);border:1px solid var(--line);border-radius:18px 18px 0 0;width:100%;max-width:520px;max-height:88vh;overflow-y:auto;padding:16px 14px calc(20px + env(safe-area-inset-bottom))}
 .modal h3{font-size:16px;margin-bottom:10px}
@@ -214,6 +254,15 @@ table.lbx{border-collapse:collapse;width:100%;font-family:Menlo,monospace;font-s
 .poser .pr.win{color:var(--led);font-weight:800;background:rgba(255,176,46,.07)}
 .poser .pr.me{box-shadow:inset 2px 0 0 var(--blue)}
 .poser .pr b{font-family:Menlo,monospace}
+@media (max-width:390px){
+  main{padding-left:9px;padding-right:9px}
+  .page-head{margin-left:1px;margin-right:1px}.page-sub{max-width:220px}
+  .hero-metric{min-width:82px;padding:8px}.hero-metric b{font-size:17px}
+  .summary-grid{grid-template-columns:1.25fr 1fr}.summary-box:last-child{grid-column:1/-1;display:flex;align-items:center;justify-content:space-between}.summary-box:last-child .hint{margin:0}
+  .p-card{padding:10px;gap:9px}.p-top{gap:7px}.ovr{min-width:39px;height:39px;font-size:15px}
+  .p-sal{font-size:12px}.p-card>.p-stat{padding:6px 4px}.p-card>.p-stat b{font-size:12px}
+  .sta{width:92px;flex-basis:92px}.position-grid{gap:4px}.position-chip{padding:6px 2px}
+}
 @media (prefers-reduced-motion: reduce){*{animation:none!important;transition:none!important}}
 </style>
 </head>
@@ -368,7 +417,14 @@ function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random
 function mkPlayer(arr,i){const ovr=(arr[10]!=null?arr[10]:calcOvr(arr));return{id:"p"+i,name:arr[0],pos:arr[1],pts:arr[2],reb:arr[3],ast:arr[4],stl:arr[5],blk:arr[6],fg:arr[7],sal:arr[8],team:arr[9]||"",ovr,drtg:arr[11]!=null?arr[11]:60,pid:arr[12]||0,t3r:arr[13]!=null?arr[13]:null,ftr:arr[14]!=null?arr[14]:null,sta:100,inj:0,yrs:ri(1,3),pot:0,form:0,mv:0,mvH:[]};}
 // NBA 官方頭像 CDN（依球員 id）。虛構/角色球員沒有 id → 不顯示
 function headshot(p){return p&&p.pid?`https://cdn.nba.com/headshots/nba/latest/260x190/${p.pid}.png`:"";}
-function avatarHTML(p,size){const u=headshot(p);return u?`<img src="${u}" loading="lazy" style="width:${size}px;height:${size}px;border-radius:50%;object-fit:cover;object-position:center top;background:var(--panel2);flex-shrink:0" onerror="this.style.display='none'">`:"";}
+function playerInitials(p){
+  const parts=String(p&&p.name||"?").trim().split(/\s+/).filter(Boolean);
+  return ((parts[0]||"?")[0]+(parts.length>1?parts[parts.length-1][0]:"")).toUpperCase();
+}
+function avatarHTML(p,size){
+  const u=headshot(p),img=u?`<img src="${u}" loading="lazy" alt="" onerror="this.remove()">`:"";
+  return `<span class="player-avatar" style="width:${size}px;height:${size}px" aria-hidden="true"><span>${playerInitials(p)}</span>${img}</span>`;
+}
 function val(p){const mv=p.mv||mvBase(p);return mv*3+Math.pow(Math.max(1,p.ovr-64),1.7)*0.5+(p.pot>p.ovr?(p.pot-p.ovr)*2:0)-p.sal*1.2;}
 function payroll(r){return r.reduce((s,p)=>s+p.sal,0);}
 /* 身價市場：基準身價由 OVR+狀態 決定；續約開價＝當日身價 */
@@ -1326,6 +1382,7 @@ function staBar(p){
 }
 function pTags(p){
   let t="";
+  if(S&&(S.starters||[]).includes(p.id))t+=`<span class="pill green">★ 先發</span> `;
   if(isResting(p.id))t+=`<span class="pill" style="background:#2a3550;color:#9db4e0">💤 輪休中</span> `;
   if(p.inj>0)t+=`<span class="pill red">傷 ${p.inj}場</span> `;
   if(p.pot&&p.ovr<p.pot)t+=`<span class="pill gold">潛力 ${p.pot}</span> `;
@@ -1337,24 +1394,24 @@ function mvChip(p){
   const arrow=c>0.05?"▲":c<-0.05?"▼":"—";
   return `<div class="mv-chip">身價 <span class="v">$${(p.mv||0).toFixed(1)}M</span> <span class="${cls}">${arrow}${Math.abs(c).toFixed(1)}%</span></div>`;
 }
-function pRow(p,btnHtml,showSta){
+function pRow(p,btnHtml,showSta,mode="roster"){
   const tg=pTags(p);
+  const meta=mode==="fa"
+    ? `${p.team?'<span style="color:var(--blue);font-weight:600">'+p.team+'</span>・':''}${p.pos}・自由球員`
+    : `${p.team?'<span style="color:var(--blue);font-weight:600">'+p.team+'</span>・':''}${p.pos}・約剩 ${Math.max(0,p.yrs)} 年`;
   return `<div class="p-card" data-pid="${p.id}">
     <div class="p-top">
       ${avatarHTML(p,38)}
       <div class="ovr ${ovrCls(p.ovr)}">${p.ovr}<small>OVR</small></div>
       <div class="p-info">
         <div class="p-name">${formIc(p)}${p.name}</div>
-        <div class="p-meta">${p.team?'<span style="color:var(--blue);font-weight:600">'+p.team+'</span>・':''}${p.pos}・約剩 ${Math.max(0,p.yrs)} 年</div>
+        <div class="p-meta">${meta}</div>
       </div>
-      <div class="p-sal">$${p.sal}M<small>年薪</small></div>
+      <div class="p-sal">$${p.sal}M<small>${mode==="fa"?'固定年薪':'年薪'}</small></div>
     </div>
-    <div class="p-row2">
-      ${tg?`<div class="p-tags">${tg}</div>`:""}
-      <div class="p-stat"><span>得<b>${p.pts}</b></span><span>籃<b>${p.reb}</b></span><span>助<b>${p.ast}</b></span><span>防<b class="d">${p.drtg||'-'}</b></span></div>
-      ${mvChip(p)}
-      ${showSta?staBar(p):""}
-    </div>
+    ${tg?`<div class="p-tags">${tg}</div>`:""}
+    <div class="p-stat"><span>得分<b>${p.pts}</b></span><span>籃板<b>${p.reb}</b></span><span>助攻<b>${p.ast}</b></span><span>防守<b class="d">${p.drtg||'-'}</b></span></div>
+    <div class="p-details">${mvChip(p)}${showSta?staBar(p):""}</div>
     ${btnHtml?`<div class="p-actions">${btnHtml}</div>`:""}
   </div>`;
 }
@@ -1469,17 +1526,16 @@ function vTeam(){
   const r=[...S.roster].sort((a,b)=>eff(b)-eff(a));
   const pw=S.roster.length>=MIN_R?power({roster:S.roster},true).toFixed(1):"—";
   const stN=(S.starters||[]).filter(id=>S.roster.some(p=>p.id===id&&p.inj<=0)).length;
-  let h=`<h2>我的陣容 <span class="tag">戰力 ${pw}・點球員設定先發（${stN}/5）</span></h2>`;
-  if(S.roster.length){
-    const tot=payrollMv(S.roster);
-    const hist=S.teamMvH||[];
-    const chg=hist.length>1?(tot/hist[hist.length-2]-1)*100:0;
-    const cls=chg>0.05?"up":chg<-0.05?"dn":"";
-    h+=`<div class="card"><div class="flex"><div><div class="muted">球隊總身價（投資組合）</div>
-      <div style="font-size:22px;font-weight:800;font-family:Menlo,monospace">$${tot.toFixed(1)}M <span class="${cls}" style="font-size:13px">${chg>0?"▲":chg<0?"▼":""}${Math.abs(chg).toFixed(1)}%</span></div></div>
-      <div class="spacer"></div>${sparkline(hist,110,32)}</div>
-      <div class="muted" style="font-size:11px;margin-top:4px">行情每天跳動一次・紅漲綠跌・低買高賣賺取陣容價值</div></div>`;
-  }
+  const tot=payrollMv(S.roster),pay=payroll(S.roster),hist=S.teamMvH||[];
+  const chg=hist.length>1&&hist[hist.length-2]?(tot/hist[hist.length-2]-1)*100:0;
+  const cls=chg>0.05?"up":chg<-0.05?"dn":"";
+  let h=`<div class="page-head"><div><div class="page-kicker">TEAM MANAGEMENT</div><h1>我的球隊</h1><div class="page-sub">管理先發、體力與合約，準備下一場比賽</div></div>
+    <div class="hero-metric"><small>球隊戰力</small><b>${pw}</b></div></div>`;
+  h+=`<div class="summary-grid">
+    <div class="summary-box"><div class="label">球隊總身價</div><div class="value accent">$${tot.toFixed(1)}M</div><div class="hint ${cls}">${chg>0?"▲ 上漲":chg<0?"▼ 下跌":"— 持平"} ${Math.abs(chg).toFixed(1)}%</div></div>
+    <div class="summary-box"><div class="label">薪資使用</div><div class="value" style="color:${pay>CAP?'var(--bad)':'var(--ink)'}">$${pay.toFixed(1)}M</div><div class="hint">上限 $${CAP}M</div></div>
+    <div class="summary-box"><div class="label">先發／名單</div><div class="value">${stN}<span style="color:var(--dim);font-size:11px"> / 5</span></div><div class="hint">共 ${S.roster.length}/${MAX_R} 人</div></div>
+  </div>`;
   if(S.phase==="prep"){
     const gs=S.roster.find(p=>p.id===S.giftId);
     h+=`<div class="card" style="border-color:var(--maple)"><b style="color:var(--led)">組隊階段</b>
@@ -1496,7 +1552,8 @@ function vTeam(){
   else{
     // 位置分類篩選（按鈕帶各位置人數）
     const cnt=posCount(S.roster);
-    h+=`<div class="flex" style="margin:2px 0 10px;gap:6px;overflow-x:auto">`
+    h+=`<div class="section-head"><div><h2>球員名單</h2><p>點擊球員卡可切換先發，操作按鈕不受影響</p></div><span class="section-count">${S.roster.length} PLAYERS</span></div>`;
+    h+=`<div class="filter-bar">`
       +`<button class="btn sm ${teamPos==="ALL"?"":"ghost"}" data-act="tpos" data-arg="ALL">全部 ${S.roster.length}</button>`
       +POSITIONS.map(p=>`<button class="btn sm ${teamPos===p?"":"ghost"}" data-act="tpos" data-arg="${p}">${p} ${cnt[p]}</button>`).join("")
       +`</div>`;
@@ -1504,9 +1561,9 @@ function vTeam(){
     const rowBtns=p=>{const rest=isResting(p.id);return ``
       +`<button class="btn sm ${rest?'':'ghost'}" data-act="rest" data-id="${p.id}" style="${rest?'background:#3a4a70;border-color:#3a4a70;color:#dbe6ff':''}">${rest?'▶ 上場':'💤 休息'}</button>`
       +`<button class="btn sm danger" data-act="release" data-id="${p.id}">釋出</button>`;};
-    h+=`<div class="card" style="padding:2px 4px">`+(list.length?list.map(p=>`<div class="${(S.starters||[]).includes(p.id)?"starter":""}" data-act="starter" data-id="${p.id}">${pRow(p,rowBtns(p),true)}</div>`).join(""):`<div class="empty">這個位置沒有球員</div>`)+`</div>`;
+    h+=`<div class="player-list">`+(list.length?list.map(p=>`<div class="roster-entry ${(S.starters||[]).includes(p.id)?"starter":""}" data-act="starter" data-id="${p.id}">${pRow(p,rowBtns(p),true)}</div>`).join(""):`<div class="card empty">這個位置沒有球員</div>`)+`</div>`;
   }
-  h+=`<p class="muted">綠框 = 先發五人（隨時可調）。沒排滿時系統自動以最佳狀態球員補位。先發消耗較多體力（-14／場，替補 -8），體力每場回 12。按球員的「💤 休息」讓他完全不上場，體力回復更快（+22／場），養好再按「▶ 上場」歸隊。</p>`;
+  h+=`<div class="card muted" style="font-size:11.5px">★ 綠色卡片代表先發。先發每場消耗 14 體力、替補消耗 8；輪休球員不會上場，每場可回復 22 體力。</div>`;
   h+=`<button class="btn ghost block" data-act="reset">🗑 刪除存檔重新開始</button>`;
   return h;
 }
@@ -1519,33 +1576,40 @@ function vMarket(){
   const nextT=nextDraftSlot(Date.now());
   const lock=S.phase==="playoffs";
   const offers=S.draftBoard.offers.filter(p=>marketPos==="ALL"||p.pos===marketPos);
-  const offerRow=p=>`<div class="p-row" data-pid="${p.id}">
-    ${avatarHTML(p,38)}
-    <div class="ovr ${ovrCls(p.ovr)}">${p.ovr}<small>OVR</small></div>
-    <div class="p-info">
-      <div class="p-name">${p.legend?'<span style="color:#e0b64a;font-weight:800">🏆</span> ':''}${p.name} ${p.bargain?'<span style="color:var(--led);font-weight:700">💎划算</span>':''}</div>
-      <div class="p-meta">${p.team?'<span style="color:var(--blue);font-weight:600">'+p.team+'</span>・':''}${p.pos}・身價 $${(p.mv||0).toFixed(1)}M</div>
+  const offerRow=p=>{
+    const ask=p.ask||p.sal,mv=p.mv||0,gap=ask-mv;
+    const gapCls=gap<=-0.5?"good":gap>=0.5?"bad":"fair";
+    const gapText=gap<=-0.5?`省 $${Math.abs(gap).toFixed(1)}M`:gap>=0.5?`溢價 $${gap.toFixed(1)}M`:"價格合理";
+    return `<div class="p-card market-card ${p.bargain?'bargain':''}" data-pid="${p.id}">
+    <div class="p-top">
+      ${avatarHTML(p,38)}
+      <div class="ovr ${ovrCls(p.ovr)}">${p.ovr}<small>OVR</small></div>
+      <div class="p-info"><div class="p-name">${p.legend?'🏆 ':''}${p.name}</div>
+        <div class="p-meta">${p.team?'<span style="color:var(--blue);font-weight:600">'+p.team+'</span>・':''}${p.pos}・球星市場</div></div>
+      <div class="p-sal">$${ask.toFixed(1)}M<small>簽約開價</small></div>
     </div>
-    <div class="p-sal" style="color:${p.bargain?'var(--led)':'var(--ink)'}">$${(p.ask||p.sal).toFixed(1)}M<small>開價</small></div>
-    <button class="btn sm" ${lock?'disabled':''} data-act="sign" data-id="${p.id}">簽下</button>
-    <div class="p-row2"><div class="p-stat"><span>得<b>${p.pts}</b></span><span>籃<b>${p.reb}</b></span><span>助<b>${p.ast}</b></span><span>防<b class="d">${p.drtg||'-'}</b></span></div></div>
-  </div>`;
-  let h=`<h2>選秀・球星市場 <span class="tag">剩餘空間 $${room}M${lock?'・季後賽鎖定':''}</span></h2>`;
-  h+=`<div class="card flex">
-    <div style="flex:1"><b style="font-size:13px">🔄 下次自動刷新 <span id="draftcd">${fmtT(nextT)}</span></b><div class="muted" style="font-size:11px">每天 6 次（每 4 小時）自動換一批 ${DRAFT_OFFERS} 人，每段有 1 次免費手動刷新。開價隨身價浮動，💎=跳樓價！</div></div>
+    ${(p.legend||p.bargain)?`<div class="p-tags">${p.legend?'<span class="pill gold">🏆 傳奇球星</span>':''}${p.bargain?'<span class="pill gold">💎 超值開價</span>':''}</div>`:''}
+    <div class="p-stat"><span>得分<b>${p.pts}</b></span><span>籃板<b>${p.reb}</b></span><span>助攻<b>${p.ast}</b></span><span>防守<b class="d">${p.drtg||'-'}</b></span></div>
+    <div class="p-details"><div class="market-price">市場身價 <b>$${mv.toFixed(1)}M</b></div><span class="price-gap ${gapCls}">${gapText}</span></div>
+    <div class="p-actions"><button class="btn" ${lock?'disabled':''} data-act="sign" data-id="${p.id}">${lock?'季後賽期間鎖定':'簽下球員'}</button></div>
+  </div>`;};
+  let h=`<div class="page-head"><div><div class="page-kicker">PLAYER MARKET</div><h1>球員市場</h1><div class="page-sub">比較能力與價格，補上陣容最需要的位置</div></div>
+    <div class="hero-metric"><small>可用薪資</small><b style="color:${Number(room)<0?'var(--bad)':'var(--led)'}">$${room}M</b></div></div>`;
+  h+=`<div class="card market-refresh">
+    <div><b style="font-size:13px">🔄 下次刷新・<span id="draftcd">${fmtT(nextT)}</span></b><div class="muted" style="font-size:11px;margin-top:3px">每 4 小時自動換一批球星，每個時段可免費刷新一次</div></div>
     <button class="btn sm ${free?'':'ghost'}" ${free?'':'disabled'} data-act="rolldraft">${free?'免費刷新':'已用完'}</button>
   </div>`;
   // 我目前各位置人數（缺位置時標紅，提醒補強）
   const myc=posCount(S.roster);
-  h+=`<div class="card" style="padding:8px 10px"><div class="muted" style="font-size:11px;margin-bottom:5px">我的陣容各位置（共 ${S.roster.length}/${MAX_R} 人）</div>
-    <div class="flex" style="gap:12px;flex-wrap:wrap">${POSITIONS.map(p=>{const n=myc[p],thin=n===0;return `<span style="font-size:14px;font-weight:700">${p} <span style="color:${thin?'var(--bad)':'var(--led)'}">${n}</span></span>`;}).join("")}</div></div>`;
-  h+=`<div class="flex" style="margin-bottom:10px;gap:6px;overflow-x:auto">${poss.map(p=>`<button class="btn sm ${marketPos===p?'':'ghost'}" data-act="mpos" data-arg="${p}">${p==="ALL"?'全部':p}</button>`).join("")}</div>`;
-  h+=`<div class="card" style="padding:2px 4px">${offers.length?offers.map(offerRow).join(""):'<div class="empty">這個位置沒有球員，換個位置或刷新看看</div>'}</div>`;
-  const fa=S.fa.filter(p=>marketPos==="ALL"||p.pos===marketPos);
-  if(fa.length){
-    h+=`<h2 style="margin-top:14px">自由球員 <span class="tag">直接簽，年薪固定</span></h2>`;
-    h+=`<div class="card" style="padding:2px 4px">${fa.map(p=>pRow(p,`<button class="btn sm" ${lock?'disabled':''} data-act="sign" data-id="${p.id}">簽下</button>`)).join("")}</div>`;
-  }
+  h+=`<div class="card"><div class="flex" style="justify-content:space-between;margin-bottom:8px"><b style="font-size:12px">陣容位置分布</b><span class="muted" style="font-size:10px">${S.roster.length}/${MAX_R} 人</span></div>
+    <div class="position-grid">${POSITIONS.map(p=>{const n=myc[p],thin=n===0;return `<div class="position-chip ${thin?'thin':''}">${p}<b>${n}</b></div>`;}).join("")}</div></div>`;
+  h+=`<div class="filter-bar">${poss.map(p=>`<button class="btn sm ${marketPos===p?'':'ghost'}" data-act="mpos" data-arg="${p}">${p==="ALL"?'全部球員':p}</button>`).join("")}</div>`;
+  h+=`<div class="section-head"><div><h2>球星市場</h2><p>價格會隨身價浮動，💎 代表折扣機會</p></div><span class="section-count">${offers.length} OFFERS</span></div>`;
+  h+=`<div class="player-list">${offers.length?offers.map(offerRow).join(""):'<div class="card empty">這個位置目前沒有球星<br>可切換位置或等待下一次刷新</div>'}</div>`;
+  const faAll=[...S.fa].sort((a,b)=>eff(b)-eff(a));
+  const fa=faAll.filter(p=>marketPos==="ALL"||p.pos===marketPos);
+  h+=`<div class="section-head"><div><h2>自由球員</h2><p>固定年薪，簽下後立即加入名單</p></div><span class="section-count">${fa.length} AVAILABLE</span></div>`;
+  h+=`<div class="player-list">${fa.length?fa.map(p=>pRow(p,`<button class="btn" ${lock?'disabled':''} data-act="sign" data-id="${p.id}">${lock?'季後賽期間鎖定':'以 $'+p.sal+'M 簽下'}</button>`,false,"fa")).join(""):'<div class="card empty">這個位置目前沒有自由球員</div>'}</div>`;
   return h;
 }
 /* --- 交易 --- */
@@ -1947,7 +2011,7 @@ function vOffseason(){
   const champ=S.champs[S.champs.length-1];
   if(champ)h+=`<div class="card" style="text-align:center"><div style="font-size:30px">🏆</div><b>${champ.name}</b> 奪下第 ${champ.season} 季總冠軍${champ.mine?"——恭喜你！":""}</div>`;
   if(S.resign){
-    h+=`<h2>① 到期合約</h2><p class="muted" style="margin-bottom:8px">球員合約到期，續約開價＝<b>當日身價</b>。小技巧：等他狀態冷下來再續，能省不少。</p><div class="card" style="padding:2px 4px">`;
+    h+=`<h2>① 到期合約</h2><p class="muted" style="margin-bottom:8px">球員合約到期，續約開價＝<b>當日身價</b>。小技巧：等他狀態冷下來再續，能省不少。</p><div class="player-list">`;
     S.resign.ids.forEach(id=>{
       const p=S.roster.find(x=>x.id===id);if(!p)return;
       const ns=marketSal(p);
@@ -1962,7 +2026,7 @@ function vOffseason(){
     if(d.done.length)h+=`<div class="card" style="padding:4px 8px">`+d.done.map(x=>`<div class="standing-row"><span class="rk">#${x.pk}</span><span class="nm">${x.team}</span><span class="wl">${x.p?x.p.name+"（"+x.p.ovr+"）":"放棄"}</span></div>`).join("")+`</div>`;
     if(onClock){
       h+=`<div class="card" style="border-color:var(--maple)"><b style="color:var(--led)">⏱ 輪到你選秀！</b><span class="muted">　第 ${d.pick+1} 順位</span></div>`;
-      h+=`<div class="card" style="padding:2px 4px">`+d.pool.map(p=>pRow(p,`<button class="btn sm" data-act="pick" data-id="${p.id}">選他</button>`)).join("")+`</div>`;
+      h+=`<div class="player-list">`+d.pool.map(p=>pRow(p,`<button class="btn sm" data-act="pick" data-id="${p.id}">選他</button>`)).join("")+`</div>`;
       h+=`<button class="btn ghost block" data-act="skip">放棄這個選秀權</button>`;
     }else h+=`<button class="btn block" data-act="draftgo">▶ 繼續選秀</button>`;
     return h;
@@ -1982,7 +2046,7 @@ document.addEventListener("click",e=>{
     case "conf":newName=($("#tn")||{value:""}).value;newConf=arg;render();break;
     case "toglegend":newName=($("#tn")||{value:""}).value;newLegend=!newLegend;render();break;
     case "new":newGame(($("#tn")||{value:""}).value.trim(),newConf,newLegend);break;
-    case "tab":tab=arg;if(arg==="sched"&&S)S.unseen=false;render();break;
+    case "tab":tab=arg;if(arg==="sched"&&S)S.unseen=false;render();window.scrollTo(0,0);break;
     case "startseason":startSeasonClock();break;
     case "starter":togStarter(id);break;
     case "rest":togRest(id);break;
@@ -2007,7 +2071,7 @@ document.addEventListener("click",e=>{
     case "skip":skipPick();break;
     case "resign":resignDecide(id,el.dataset.keep==="1");break;
     case "newseason":startNewSeason();break;
-    case "gomarket":tab="market";render();break;
+    case "gomarket":tab="market";render();window.scrollTo(0,0);break;
     case "boxscore":showBoxscore(+arg);break;
     case "reset":resetAll();break;
   }

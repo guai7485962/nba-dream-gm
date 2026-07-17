@@ -24,7 +24,7 @@
 
 ## 最近部署
 
-- 功能 commit：`a39a7ee`（修正傳奇頭像與市場價格卡片）
+- 最新功能 commit：`9074ac8`（改用 Jason Kidd 彩色頭像）
 - Cloudflare Workers Builds：`completed / success`
 - 正式網址：`https://nba-dream-gm.guai7485962.workers.dev/`
-- 線上確認：已包含新版價格比較元件與校正後的傳奇 player ID。
+- 線上確認：正式 HTML 已包含 ESPN Jason Kidd `429.png` 彩色頭像覆寫，頁面更新於 2026-07-17 09:56。

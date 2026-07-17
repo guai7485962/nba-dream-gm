@@ -420,14 +420,20 @@ const rnd=(a,b)=>a+Math.random()*(b-a);
 const ri=(a,b)=>Math.floor(rnd(a,b+1));
 function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
 function mkPlayer(arr,i){const ovr=(arr[10]!=null?arr[10]:calcOvr(arr));return{id:"p"+i,name:arr[0],pos:arr[1],pts:arr[2],reb:arr[3],ast:arr[4],stl:arr[5],blk:arr[6],fg:arr[7],sal:arr[8],team:arr[9]||"",ovr,drtg:arr[11]!=null?arr[11]:60,pid:arr[12]||0,t3r:arr[13]!=null?arr[13]:null,ftr:arr[14]!=null?arr[14]:null,sta:100,inj:0,yrs:ri(1,3),pot:0,form:0,mv:0,mvH:[]};}
-// NBA 官方頭像 CDN（依球員 id）。虛構/角色球員沒有 id → 不顯示
-function headshot(p){return p&&p.pid?`https://cdn.nba.com/headshots/nba/latest/260x190/${p.pid}.png`:"";}
+// 預設走 NBA 官方頭像；若 latest 只有灰色占位圖，可用已驗證的彩色來源覆寫
+const HEADSHOT_OVERRIDES={
+  467:"https://a.espncdn.com/i/headshots/nba/players/full/429.png" // Jason Kidd（ESPN player id 429）
+};
+function nbaHeadshot(p){return p&&p.pid?`https://cdn.nba.com/headshots/nba/latest/260x190/${p.pid}.png`:"";}
+function headshot(p){return p&&HEADSHOT_OVERRIDES[p.pid]||nbaHeadshot(p);}
+function headshotFallback(p){const nba=nbaHeadshot(p);return headshot(p)!==nba?nba:"";}
 function playerInitials(p){
   const parts=String(p&&p.name||"?").trim().split(/\s+/).filter(Boolean);
   return ((parts[0]||"?")[0]+(parts.length>1?parts[parts.length-1][0]:"")).toUpperCase();
 }
 function avatarHTML(p,size){
-  const u=headshot(p),img=u?`<img src="${u}" loading="lazy" alt="" onerror="this.remove()">`:"";
+  const u=headshot(p),fb=headshotFallback(p),err=fb?`this.onerror=null;this.src='${fb}'`:"this.remove()";
+  const img=u?`<img src="${u}" loading="lazy" referrerpolicy="no-referrer" alt="" onerror="${err}">`:"";
   return `<span class="player-avatar" style="width:${size}px;height:${size}px" aria-hidden="true"><span>${playerInitials(p)}</span>${img}</span>`;
 }
 function val(p){const mv=p.mv||mvBase(p);return mv*3+Math.pow(Math.max(1,p.ovr-64),1.7)*0.5+(p.pot>p.ovr?(p.pot-p.ovr)*2:0)-p.sal*1.2;}
@@ -1874,7 +1880,8 @@ const WACT={
 function wAv(p,sz){
   if(!p)return "";
   const ph=`<div class="av-ph" style="width:${sz}px;height:${sz}px;font-size:${Math.round(sz*0.42)}px">${(p.n||'?')[0]}</div>`;
-  return p.pid?`<div class="av-wrap" style="width:${sz}px;height:${sz}px">${ph}<img src="https://cdn.nba.com/headshots/nba/latest/260x190/${p.pid}.png" style="width:${sz}px;height:${sz}px;border-radius:50%;object-fit:cover;object-position:center top;position:absolute;left:0;top:0" onerror="this.style.display='none'"></div>`:ph;
+  const u=headshot(p),fb=headshotFallback(p),err=fb?`this.onerror=null;this.src='${fb}'`:"this.style.display='none'";
+  return u?`<div class="av-wrap" style="width:${sz}px;height:${sz}px">${ph}<img src="${u}" referrerpolicy="no-referrer" style="width:${sz}px;height:${sz}px;border-radius:50%;object-fit:cover;object-position:center top;position:absolute;left:0;top:0" onerror="${err}"></div>`:ph;
 }
 // 進攻五人站位（PG,SG,SF,PF,C 依序）與籃框位置（百分比座標）
 const WSPOTS=[[50,16],[83,34],[17,34],[31,58],[69,60]];

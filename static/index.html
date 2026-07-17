@@ -87,8 +87,13 @@ h2 .tag{font-size:11px;color:var(--dim);font-weight:400;margin-left:8px}
 .p-sal small{display:block;font-size:10px;color:var(--dim);font-weight:400}
 .market-card{border-color:#3b3529;background:linear-gradient(145deg,#242016,#191b22 54%)}
 .market-card.bargain{border-color:#8a6a1f;box-shadow:inset 3px 0 0 var(--led),0 6px 20px rgba(0,0,0,.16)}
-.market-price{font-size:10.5px;color:var(--dim)}
-.market-price b{color:var(--ink);font-family:Menlo,monospace;margin-left:3px}
+.price-compare{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:8px;background:#13161d;border:1px solid #302e29;border-radius:11px}
+.price-metric{min-width:0;padding:8px 9px;border:1px solid #303641;border-radius:9px;background:#191d25}
+.price-metric.ask{border-color:#6b5522;background:linear-gradient(145deg,#292313,#1b1d22)}
+.price-metric small{display:block;font-size:9.5px;color:var(--dim);line-height:1.2;margin-bottom:3px}
+.price-metric b{display:block;font:800 15px/1.15 Menlo,monospace;color:var(--ink);white-space:nowrap}
+.price-metric.ask b{color:var(--led)}
+.price-compare-foot{grid-column:1/-1;display:flex;align-items:center;justify-content:space-between;gap:8px;padding:0 2px;color:var(--dim);font-size:9.5px}
 .price-gap{font:800 10px/1 Menlo,monospace;padding:5px 7px;border-radius:99px;border:1px solid var(--line);white-space:nowrap}
 .price-gap.good{color:#ffd166;background:#2a2415;border-color:#785f21}
 .price-gap.bad{color:#ff8a8a;background:#2b191b;border-color:#673236}
@@ -260,7 +265,7 @@ table.lbx{border-collapse:collapse;width:100%;font-family:Menlo,monospace;font-s
   .hero-metric{min-width:82px;padding:8px}.hero-metric b{font-size:17px}
   .summary-grid{grid-template-columns:1.25fr 1fr}.summary-box:last-child{grid-column:1/-1;display:flex;align-items:center;justify-content:space-between}.summary-box:last-child .hint{margin:0}
   .p-card{padding:10px;gap:9px}.p-top{gap:7px}.ovr{min-width:39px;height:39px;font-size:15px}
-  .p-sal{font-size:12px}.p-card>.p-stat{padding:6px 4px}.p-card>.p-stat b{font-size:12px}
+  .p-sal{font-size:12px}.p-card>.p-stat{padding:6px 4px}.p-card>.p-stat b{font-size:12px}.price-metric{padding:7px 8px}.price-metric b{font-size:14px}
   .sta{width:92px;flex-basis:92px}.position-grid{gap:4px}.position-chip{padding:6px 2px}
 }
 @media (prefers-reduced-motion: reduce){*{animation:none!important;transition:none!important}}
@@ -628,18 +633,18 @@ const LEGENDS=[
 ["Allen Iverson","PG",31.1,3.8,5.4,2.2,0.2,42.0,30.0,"PHI",93,50,947,0.13,0.30],
 ["Tracy McGrady","SG",32.1,6.5,5.5,1.7,0.9,45.0,30.0,"ORL",93,55,1503,0.28,0.28],
 ["Yao Ming","C",25.0,9.4,1.8,0.4,2.0,52.0,28.0,"HOU",90,78,2397,0.00,0.40],
-["Jason Kidd","PG",18.7,7.3,9.8,2.2,0.3,41.0,26.0,"NJN",90,80,429,0.28,0.20],
-["Gary Payton","PG",24.2,4.6,8.7,2.4,0.2,48.0,22.0,"SEA",90,88,909,0.12,0.22],
+["Jason Kidd","PG",18.7,7.3,9.8,2.2,0.3,41.0,26.0,"NJN",90,80,467,0.28,0.20],
+["Gary Payton","PG",24.2,4.6,8.7,2.4,0.2,48.0,22.0,"SEA",90,88,56,0.12,0.22],
 ["Ben Wallace","C",9.7,13.0,1.6,1.4,2.4,47.0,20.0,"DET",88,92,1112,0.00,0.30],
-["Chris Webber","PF",27.1,11.1,5.5,1.7,1.7,49.0,24.0,"SAC",89,62,165,0.03,0.26],
+["Chris Webber","PF",27.1,11.1,5.5,1.7,1.7,49.0,24.0,"SAC",89,62,185,0.03,0.26],
 ["Chauncey Billups","PG",17.0,3.0,7.2,1.0,0.2,42.0,18.0,"DET",87,68,1497,0.36,0.28],
-["Rasheed Wallace","PF",19.4,7.4,2.0,1.3,1.3,45.0,16.0,"POR",85,78,741,0.22,0.18],
-["Elton Brand","PF",20.0,10.0,2.6,1.0,2.5,50.0,18.0,"LAC",86,72,1889,0.01,0.30],
-["Baron Davis","PG",22.9,4.4,8.1,2.4,0.4,43.0,17.0,"GSW",86,60,1882,0.30,0.24],
+["Rasheed Wallace","PF",19.4,7.4,2.0,1.3,1.3,45.0,16.0,"POR",85,78,739,0.22,0.18],
+["Elton Brand","PF",20.0,10.0,2.6,1.0,2.5,50.0,18.0,"LAC",86,72,1882,0.01,0.30],
+["Baron Davis","PG",22.9,4.4,8.1,2.4,0.4,43.0,17.0,"GSW",86,60,1884,0.30,0.24],
 ["Joe Johnson","SG",25.0,4.4,5.8,1.0,0.2,44.0,18.0,"ATL",86,52,2207,0.30,0.20],
-["Grant Hill","SF",25.8,6.6,5.2,1.5,0.6,48.0,20.0,"DET",88,60,646,0.08,0.30],
-["Dikembe Mutombo","C",11.0,12.6,1.0,0.4,3.3,51.0,14.0,"ATL",84,90,733,0.00,0.35],
-["Carlos Boozer","PF",20.0,11.5,3.0,1.0,0.5,54.0,16.0,"UTA",85,48,2410,0.02,0.26]
+["Grant Hill","SF",25.8,6.6,5.2,1.5,0.6,48.0,20.0,"DET",88,60,255,0.08,0.30],
+["Dikembe Mutombo","C",11.0,12.6,1.0,0.4,3.3,51.0,14.0,"ATL",84,90,87,0.00,0.35],
+["Carlos Boozer","PF",20.0,11.5,3.0,1.0,0.5,54.0,16.0,"UTA",85,48,2430,0.02,0.26]
 ];
 /* 生成底薪角色球員（虛構），給擴張隊開局墊底 */
 function genRoles(n){
@@ -1586,11 +1591,14 @@ function vMarket(){
       <div class="ovr ${ovrCls(p.ovr)}">${p.ovr}<small>OVR</small></div>
       <div class="p-info"><div class="p-name">${p.legend?'🏆 ':''}${p.name}</div>
         <div class="p-meta">${p.team?'<span style="color:var(--blue);font-weight:600">'+p.team+'</span>・':''}${p.pos}・球星市場</div></div>
-      <div class="p-sal">$${ask.toFixed(1)}M<small>簽約開價</small></div>
     </div>
     ${(p.legend||p.bargain)?`<div class="p-tags">${p.legend?'<span class="pill gold">🏆 傳奇球星</span>':''}${p.bargain?'<span class="pill gold">💎 超值開價</span>':''}</div>`:''}
+    <div class="price-compare">
+      <div class="price-metric ask"><small>開價年薪</small><b>$${ask.toFixed(1)}M</b></div>
+      <div class="price-metric"><small>市場身價</small><b>$${mv.toFixed(1)}M</b></div>
+      <div class="price-compare-foot"><span>開價與身價比較</span><span class="price-gap ${gapCls}">${gapText}</span></div>
+    </div>
     <div class="p-stat"><span>得分<b>${p.pts}</b></span><span>籃板<b>${p.reb}</b></span><span>助攻<b>${p.ast}</b></span><span>防守<b class="d">${p.drtg||'-'}</b></span></div>
-    <div class="p-details"><div class="market-price">市場身價 <b>$${mv.toFixed(1)}M</b></div><span class="price-gap ${gapCls}">${gapText}</span></div>
     <div class="p-actions"><button class="btn" ${lock?'disabled':''} data-act="sign" data-id="${p.id}">${lock?'季後賽期間鎖定':'簽下球員'}</button></div>
   </div>`;};
   let h=`<div class="page-head"><div><div class="page-kicker">PLAYER MARKET</div><h1>球員市場</h1><div class="page-sub">比較能力與價格，補上陣容最需要的位置</div></div>

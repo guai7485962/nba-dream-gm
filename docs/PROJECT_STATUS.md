@@ -19,3 +19,10 @@
 - `npm.cmd run ui:shot -- nba`：390×844、412×915、430×932 共 12 張截圖；`report.json` 為 0 errors、0 warnings，已逐張檢查價格比較區塊無截斷或溢位。
 - 9 個校正後的 NBA 官方頭像網址皆回應 HTTP 200。
 - Codex in-app Browser 當次沒有可用瀏覽器實例；互動檢查未執行，以 Mobile UI Lab 實際渲染結果作為視覺證據。
+
+## 最近部署
+
+- 功能 commit：`a39a7ee`（修正傳奇頭像與市場價格卡片）
+- Cloudflare Workers Builds：`completed / success`
+- 正式網址：`https://nba-dream-gm.guai7485962.workers.dev/`
+- 線上確認：已包含新版價格比較元件與校正後的傳奇 player ID。

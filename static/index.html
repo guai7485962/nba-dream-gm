@@ -960,7 +960,8 @@ function simGameDetailed(ta,tb,meIdx){const A=engTeam(ta,meIdx===0,ta.name||'A')
   let hi=evts;if(evts.length>22){const keep=evts.filter(e=>e.clutch),rest=evts.filter(e=>!e.clutch),step=Math.max(1,Math.ceil(rest.length/Math.max(1,22-keep.length)));hi=evts.filter(e=>e.clutch||rest.indexOf(e)%step===0);}
   const mkBox=T=>T.players.map(w=>({n:w.p.name,pos:w.p.pos,ovr:w.p.ovr,start:w.start,min:Math.round(w.secs/60),pts:w.pts,reb:w.reb,ast:w.ast,stl:w.stl,blk:w.blk,fgm:w.fgm,fga:w.fga,t3m:w.t3m,t3a:w.t3a,ftm:w.ftm,fta:w.fta,tov:w.tov,pf:w.pf,fg:w.fga?+(w.fgm/w.fga*100).toFixed(1):0})).filter(b=>b.min>0).sort((a,b)=>b.pts-a.pts);
   const oppR=meIdx===0?B:A,myR=meIdx===0?A:B,sortSt=T=>T.players.filter(w=>w.start).sort((a,b)=>(POS_NUM[a.p.pos]||3)-(POS_NUM[b.p.pos]||3)),oppSt=sortSt(oppR),mySt=sortSt(myR);
-  const matchup=oppSt.map((op,i)=>{const d=mySt[Math.min(i,mySt.length-1)];return {oppN:LnP(op.p),oppPos:op.p.pos,oppOvr:op.p.ovr,meN:d?LnP(d.p):'-',mePos:d?d.p.pos:'',meDr:d?(d.p.drtg||'-'):''};});
+  const matchup=oppSt.map((op,i)=>{let d=mySt[Math.min(i,mySt.length-1)];const did=(typeof S!=='undefined'&&S&&S.defByOpp)?S.defByOpp[op.p.id]:null;if(did){const od=mySt.find(x=>x.p.id===did);if(od)d=od;} // 套用玩家手動對位覆寫（與 liveDefMap 一致），找不到防守者則退回預設配對
+    return {oppN:LnP(op.p),oppPos:op.p.pos,oppOvr:op.p.ovr,meN:d?LnP(d.p):'-',mePos:d?d.p.pos:'',meDr:d?(d.p.drtg||'-'):''};});
   const lineOf=T=>T.players.map(w=>({id:w.p.id,n:LnP(w.p),pos:w.p.pos,pid:w.p.pid||0,ovr:w.p.ovr,st:w.start}));
   return {sa,sb,qa,qb,boxA:mkBox(A),boxB:mkBox(B),evts:hi,qsum,matchup,myName:myR.name,pbp,nA:nameA,nB:nameB,myIsA:meIdx===0,lineA:lineOf(A),lineB:lineOf(B),tacA:tacName(A.tac),tacB:tacName(B.tac)};}
 function simGame(ta,tb,meIdx){

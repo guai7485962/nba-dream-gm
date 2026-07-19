@@ -210,6 +210,36 @@ def resolve_position(pid, pos_map, row):
     return base  # PG/SG/SF/PF/C 已明確，直接用
 
 
+# ─── 真實三分/罰球命中率（給引擎的射手模型；一律存 0-1 小數）──────
+
+# 位置罰球後備（對齊 static/index.html 引擎 EST_FT）
+_POS_FT = {"PG": 0.80, "SG": 0.79, "SF": 0.76, "PF": 0.71, "C": 0.65}
+
+
+def resolve_ft(row, pos):
+    """回傳真實罰球命中率（0-1）。造罰球極少、樣本不足時退回位置估計。"""
+    ftp = row.get("FT_PCT")
+    fta = row.get("FTA", 0) or 0
+    if ftp is not None and fta >= 1.0:      # 每場至少 1 次罰球才採用真實值
+        return round(float(ftp), 3)
+    return _POS_FT.get(pos, 0.75)
+
+
+def resolve_p3(row, fg_pct100):
+    """回傳真實三分命中率（0-1）。三分出手極少時退回依 FG%/出手傾向的合理低值，
+    避免把不投三分者的 0% 直接送進引擎導致射手不投。"""
+    p3 = row.get("FG3_PCT")
+    fg3a = row.get("FG3A", 0) or 0
+    if p3 is not None and fg3a >= 0.8:       # 每場至少 0.8 次三分出手才採用真實值
+        return round(float(p3), 3)
+    # 幾乎不投三分（多為中鋒）→ 時代合理低值
+    if fg3a < 0.2:
+        return 0.20
+    # 出手偏少 → 以 FG% 與聯盟平均估
+    v = 0.30 + max(0.0, (fg_pct100 - 45)) * 0.002
+    return round(min(0.360, max(0.28, v)), 3)
+
+
 def _stats_guess(row):
     """純數據推斷位置（PlayerIndex 失敗時的 fallback）。"""
     reb, ast, blk = row.get("REB", 0), row.get("AST", 0), row.get("BLK", 0)
@@ -346,6 +376,9 @@ def main():
         t3r = round(fg3a / fga, 3) if fga > 0 else 0      # 三分出手佔比（投不投三分的傾向）
         ftr = round(fta / fga, 3) if fga > 0 else 0       # 罰球出手 / 投籃出手（造犯規上罰球線的傾向）
         pid  = r["PLAYER_ID"]
+        pos  = resolve_position(pid, pos_map, r)
+        ft   = resolve_ft(r, pos)                          # 真實罰球命中率（0-1）
+        p3   = resolve_p3(r, fg)                           # 真實三分命中率（0-1）
         adv  = adv_map.get(pid) or {}
         pie  = adv.get("pie")
         dr   = adv.get("dr") or 0
@@ -353,10 +386,10 @@ def main():
             "player_id": pid,
             "name":   r["PLAYER_NAME"],
             "team":   r.get("TEAM_ABBREVIATION", ""),
-            "pos":    resolve_position(pid, pos_map, r),
+            "pos":    pos,
             "pts": pts, "reb": reb, "ast": ast,
             "stl": stl, "blk": blk, "fg":  fg,
-            "t3r": t3r, "ftr": ftr,
+            "t3r": t3r, "ftr": ftr, "ft": ft, "p3": p3,
             "pie": round((pie * 100 if (pie is not None and pie < 1.5) else (pie or 0)), 1),
             "def_rating": round(dr, 1),
             "def_rtg": defense_rating(dr, blk, stl),

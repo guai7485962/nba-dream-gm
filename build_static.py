@@ -24,14 +24,42 @@ def read_players():
     return rows
 
 
+# ft/p3 缺欄後備（對齊 static/index.html 引擎的 EST_FT / estP3；正常情況 players.json 已有值）
+POS_FT_FALLBACK = {"PG": 0.80, "SG": 0.79, "SF": 0.76, "PF": 0.71, "C": 0.65}
+
+
+def _fallback_ft(p):
+    return POS_FT_FALLBACK.get(p.get("pos"), 0.75)
+
+
+def _fallback_p3(p):
+    # 對齊引擎 estP3：以三分出手傾向 t3r 與 FG% 估（fg 為 0-100 尺度）
+    t3r = p.get("t3r") or 0.0
+    fg = p.get("fg")
+    if fg is None:
+        fg = 47.0
+    v = 0.265 + t3r * 0.20 + max(0.0, (fg - 45)) * 0.002
+    return round(min(0.385, max(0.24, v)), 3)
+
+
+def player_row(p):
+    """把一名球員 dict 轉成前端 DB 的 17 欄格式（單一真相，server.py 也用）：
+       [name,pos,pts,reb,ast,stl,blk,fg,salary,team,ovr,def_rtg,player_id,t3r,ftr,ft,p3]
+       ft/p3 一律為引擎要的 0-1 小數；缺值時依位置/t3r 後備。"""
+    ft = p.get("ft")
+    p3 = p.get("p3")
+    if ft is None:
+        ft = _fallback_ft(p)
+    if p3 is None:
+        p3 = _fallback_p3(p)
+    return [p["name"], p["pos"], p["pts"], p["reb"], p["ast"],
+            p["stl"], p["blk"], p["fg"], p["salary"], p.get("team", ""),
+            p.get("ovr", 0), p.get("def_rtg", 60), p.get("player_id", 0),
+            p.get("t3r", 0), p.get("ftr", 0), ft, p3]
+
+
 def format_db_js(players):
-    lines = []
-    for p in players:
-        row = [p["name"], p["pos"], p["pts"], p["reb"], p["ast"],
-               p["stl"], p["blk"], p["fg"], p["salary"], p.get("team", ""),
-               p.get("ovr", 0), p.get("def_rtg", 60), p.get("player_id", 0),
-               p.get("t3r", 0), p.get("ftr", 0)]
-        lines.append(json.dumps(row, ensure_ascii=False))
+    lines = [json.dumps(player_row(p), ensure_ascii=False) for p in players]
     return "let DB=[\n" + ",\n".join(lines) + "\n];"
 
 

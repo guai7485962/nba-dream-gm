@@ -419,7 +419,7 @@ function posOK(pos,slotIdx){return Math.abs((POS_NUM[pos]||3)-(slotIdx+1))<=1;} 
 const rnd=(a,b)=>a+Math.random()*(b-a);
 const ri=(a,b)=>Math.floor(rnd(a,b+1));
 function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
-function mkPlayer(arr,i){const ovr=(arr[10]!=null?arr[10]:calcOvr(arr));return{id:"p"+i,name:arr[0],pos:arr[1],pts:arr[2],reb:arr[3],ast:arr[4],stl:arr[5],blk:arr[6],fg:arr[7],sal:arr[8],team:arr[9]||"",ovr,drtg:arr[11]!=null?arr[11]:60,pid:arr[12]||0,t3r:arr[13]!=null?arr[13]:null,ftr:arr[14]!=null?arr[14]:null,sta:100,inj:0,yrs:ri(1,3),pot:0,form:0,mv:0,mvH:[]};}
+function mkPlayer(arr,i){const ovr=(arr[10]!=null?arr[10]:calcOvr(arr));return{id:"p"+i,name:arr[0],pos:arr[1],pts:arr[2],reb:arr[3],ast:arr[4],stl:arr[5],blk:arr[6],fg:arr[7],sal:arr[8],team:arr[9]||"",ovr,drtg:arr[11]!=null?arr[11]:60,pid:arr[12]||0,t3r:arr[13]!=null?arr[13]:null,ftr:arr[14]!=null?arr[14]:null,ft:arr[15]!=null?arr[15]:null,p3:arr[16]!=null?arr[16]:null,sta:100,inj:0,yrs:ri(1,3),pot:0,form:0,mv:0,mvH:[]};}
 // 預設走 NBA 官方頭像；若 latest 只有灰色占位圖，可用已驗證的彩色來源覆寫
 const HEADSHOT_OVERRIDES={
   467:"https://a.espncdn.com/i/headshots/nba/players/full/429.png" // Jason Kidd（ESPN player id 429）
@@ -607,62 +607,63 @@ function power(team,isMe){
 }
 
 /* ============ 建立新遊戲 ============ */
-/* 近 15 年傳奇球星（退役為主，避免與現役資料庫重複）。格式同 DB 15 欄：
-   [name,pos,pts,reb,ast,stl,blk,fg,salary,team,ovr,def_rtg,player_id,t3r,ftr] */
+/* 近 15 年傳奇球星（退役為主，避免與現役資料庫重複）。格式同 DB 17 欄：
+   [name,pos,pts,reb,ast,stl,blk,fg,salary,team,ovr,def_rtg,player_id,t3r,ftr,ft,p3]
+   ft/p3＝真實生涯罰球/三分命中率（不投三分者填時代合理低值） */
 /* 註：def_rtg 為「防守能力分數」，越高＝防守越好（現役如 Wembanyama 92、Gobert 74、Trae 32） */
 const LEGENDS=[
-["Kobe Bryant","SG",30.0,5.5,5.0,1.8,0.5,46.0,35.0,"LAL",96,78,977,0.22,0.30],
-["Tim Duncan","PF",25.0,12.9,3.2,0.9,2.5,51.0,35.0,"SAS",95,88,1495,0.01,0.28],
-["Dirk Nowitzki","PF",26.0,8.1,3.1,0.8,0.9,48.0,32.0,"DAL",93,48,1717,0.20,0.30],
-["Dwyane Wade","SG",30.0,5.0,7.5,2.2,1.3,49.0,30.0,"MIA",94,72,2548,0.08,0.42],
-["Kevin Garnett","PF",24.2,13.9,5.0,1.4,1.6,50.0,32.0,"MIN",94,90,708,0.02,0.24],
-["Dwight Howard","C",22.9,14.1,1.4,0.9,2.4,59.0,28.0,"ORL",92,90,2730,0.00,0.55],
-["Carmelo Anthony","SF",28.7,6.9,2.6,1.1,0.5,45.0,27.0,"NYK",90,45,2546,0.25,0.34],
-["Paul Pierce","SF",26.8,6.5,4.5,1.3,0.8,47.0,22.0,"BOS",90,66,1718,0.28,0.42],
-["Derrick Rose","PG",25.0,4.1,7.7,1.0,0.6,45.0,20.0,"CHI",91,52,201565,0.15,0.30],
-["Pau Gasol","C",20.8,11.1,3.5,0.5,2.0,53.0,20.0,"MEM",89,68,2200,0.05,0.28],
-["Steve Nash","PG",18.6,3.5,11.5,0.7,0.1,50.0,13.0,"PHX",90,40,959,0.35,0.20],
-["Ray Allen","SG",26.4,4.5,4.3,1.1,0.3,46.0,14.0,"SEA",88,55,951,0.45,0.24],
-["Tony Parker","PG",22.0,3.1,7.7,0.9,0.1,50.0,14.0,"SAS",88,52,2225,0.10,0.20],
-["Chris Bosh","PF",24.0,10.8,2.4,0.7,1.0,49.0,20.0,"TOR",88,66,2547,0.12,0.30],
-["Blake Griffin","PF",21.9,9.5,3.8,0.9,0.5,52.0,18.0,"LAC",88,55,201933,0.10,0.35],
-["Amar'e Stoudemire","PF",25.9,8.9,1.0,0.9,1.3,55.0,18.0,"PHX",88,48,2405,0.02,0.40],
-["LaMarcus Aldridge","PF",23.4,11.1,2.6,0.7,1.0,47.0,18.0,"POR",88,66,200746,0.06,0.24],
-["Manu Ginobili","SG",19.5,4.8,4.9,1.6,0.4,47.0,15.0,"SAS",87,68,1938,0.36,0.30],
-["Vince Carter","SF",27.6,5.5,4.5,1.2,1.1,46.0,16.0,"TOR",88,55,1713,0.28,0.32],
-["Zach Randolph","PF",20.1,12.2,2.0,0.8,0.3,47.0,16.0,"MEM",86,45,2216,0.05,0.28],
-["Marc Gasol","C",20.0,7.6,4.0,1.0,1.5,47.0,15.0,"MEM",87,85,201188,0.20,0.24],
-["Joakim Noah","C",12.6,11.3,5.4,1.2,1.5,48.0,12.0,"CHI",86,84,201149,0.00,0.30],
-["Rajon Rondo","PG",11.9,4.8,11.7,2.3,0.1,48.0,13.0,"BOS",85,70,200765,0.08,0.20],
-["Andre Iguodala","SF",18.8,5.7,5.5,2.1,0.5,46.0,14.0,"PHI",85,74,2738,0.30,0.24],
-["Shaquille O'Neal","C",29.7,13.6,3.8,0.5,2.3,58.0,35.0,"LAL",97,85,406,0.00,0.45],
-["Allen Iverson","PG",31.1,3.8,5.4,2.2,0.2,42.0,30.0,"PHI",93,50,947,0.13,0.30],
-["Tracy McGrady","SG",32.1,6.5,5.5,1.7,0.9,45.0,30.0,"ORL",93,55,1503,0.28,0.28],
-["Yao Ming","C",25.0,9.4,1.8,0.4,2.0,52.0,28.0,"HOU",90,78,2397,0.00,0.40],
-["Jason Kidd","PG",18.7,7.3,9.8,2.2,0.3,41.0,26.0,"NJN",90,80,467,0.28,0.20],
-["Gary Payton","PG",24.2,4.6,8.7,2.4,0.2,48.0,22.0,"SEA",90,88,56,0.12,0.22],
-["Ben Wallace","C",9.7,13.0,1.6,1.4,2.4,47.0,20.0,"DET",88,92,1112,0.00,0.30],
-["Chris Webber","PF",27.1,11.1,5.5,1.7,1.7,49.0,24.0,"SAC",89,62,185,0.03,0.26],
-["Chauncey Billups","PG",17.0,3.0,7.2,1.0,0.2,42.0,18.0,"DET",87,68,1497,0.36,0.28],
-["Rasheed Wallace","PF",19.4,7.4,2.0,1.3,1.3,45.0,16.0,"POR",85,78,739,0.22,0.18],
-["Elton Brand","PF",20.0,10.0,2.6,1.0,2.5,50.0,18.0,"LAC",86,72,1882,0.01,0.30],
-["Baron Davis","PG",22.9,4.4,8.1,2.4,0.4,43.0,17.0,"GSW",86,60,1884,0.30,0.24],
-["Joe Johnson","SG",25.0,4.4,5.8,1.0,0.2,44.0,18.0,"ATL",86,52,2207,0.30,0.20],
-["Grant Hill","SF",25.8,6.6,5.2,1.5,0.6,48.0,20.0,"DET",88,60,255,0.08,0.30],
-["Dikembe Mutombo","C",11.0,12.6,1.0,0.4,3.3,51.0,14.0,"ATL",84,90,87,0.00,0.35],
-["Carlos Boozer","PF",20.0,11.5,3.0,1.0,0.5,54.0,16.0,"UTA",85,48,2430,0.02,0.26]
+["Kobe Bryant","SG",30.0,5.5,5.0,1.8,0.5,46.0,35.0,"LAL",96,78,977,0.22,0.30,0.837,0.329],
+["Tim Duncan","PF",25.0,12.9,3.2,0.9,2.5,51.0,35.0,"SAS",95,88,1495,0.01,0.28,0.696,0.18],
+["Dirk Nowitzki","PF",26.0,8.1,3.1,0.8,0.9,48.0,32.0,"DAL",93,48,1717,0.20,0.30,0.879,0.380],
+["Dwyane Wade","SG",30.0,5.0,7.5,2.2,1.3,49.0,30.0,"MIA",94,72,2548,0.08,0.42,0.765,0.293],
+["Kevin Garnett","PF",24.2,13.9,5.0,1.4,1.6,50.0,32.0,"MIN",94,90,708,0.02,0.24,0.789,0.275],
+["Dwight Howard","C",22.9,14.1,1.4,0.9,2.4,59.0,28.0,"ORL",92,90,2730,0.00,0.55,0.567,0.20],
+["Carmelo Anthony","SF",28.7,6.9,2.6,1.1,0.5,45.0,27.0,"NYK",90,45,2546,0.25,0.34,0.814,0.355],
+["Paul Pierce","SF",26.8,6.5,4.5,1.3,0.8,47.0,22.0,"BOS",90,66,1718,0.28,0.42,0.806,0.368],
+["Derrick Rose","PG",25.0,4.1,7.7,1.0,0.6,45.0,20.0,"CHI",91,52,201565,0.15,0.30,0.823,0.315],
+["Pau Gasol","C",20.8,11.1,3.5,0.5,2.0,53.0,20.0,"MEM",89,68,2200,0.05,0.28,0.753,0.368],
+["Steve Nash","PG",18.6,3.5,11.5,0.7,0.1,50.0,13.0,"PHX",90,40,959,0.35,0.20,0.904,0.428],
+["Ray Allen","SG",26.4,4.5,4.3,1.1,0.3,46.0,14.0,"SEA",88,55,951,0.45,0.24,0.894,0.400],
+["Tony Parker","PG",22.0,3.1,7.7,0.9,0.1,50.0,14.0,"SAS",88,52,2225,0.10,0.20,0.751,0.324],
+["Chris Bosh","PF",24.0,10.8,2.4,0.7,1.0,49.0,20.0,"TOR",88,66,2547,0.12,0.30,0.799,0.335],
+["Blake Griffin","PF",21.9,9.5,3.8,0.9,0.5,52.0,18.0,"LAC",88,55,201933,0.10,0.35,0.696,0.330],
+["Amar'e Stoudemire","PF",25.9,8.9,1.0,0.9,1.3,55.0,18.0,"PHX",88,48,2405,0.02,0.40,0.780,0.24],
+["LaMarcus Aldridge","PF",23.4,11.1,2.6,0.7,1.0,47.0,18.0,"POR",88,66,200746,0.06,0.24,0.812,0.320],
+["Manu Ginobili","SG",19.5,4.8,4.9,1.6,0.4,47.0,15.0,"SAS",87,68,1938,0.36,0.30,0.827,0.369],
+["Vince Carter","SF",27.6,5.5,4.5,1.2,1.1,46.0,16.0,"TOR",88,55,1713,0.28,0.32,0.798,0.371],
+["Zach Randolph","PF",20.1,12.2,2.0,0.8,0.3,47.0,16.0,"MEM",86,45,2216,0.05,0.28,0.762,0.289],
+["Marc Gasol","C",20.0,7.6,4.0,1.0,1.5,47.0,15.0,"MEM",87,85,201188,0.20,0.24,0.753,0.349],
+["Joakim Noah","C",12.6,11.3,5.4,1.2,1.5,48.0,12.0,"CHI",86,84,201149,0.00,0.30,0.646,0.15],
+["Rajon Rondo","PG",11.9,4.8,11.7,2.3,0.1,48.0,13.0,"BOS",85,70,200765,0.08,0.20,0.603,0.312],
+["Andre Iguodala","SF",18.8,5.7,5.5,2.1,0.5,46.0,14.0,"PHI",85,74,2738,0.30,0.24,0.709,0.330],
+["Shaquille O'Neal","C",29.7,13.6,3.8,0.5,2.3,58.0,35.0,"LAL",97,85,406,0.00,0.45,0.527,0.15],
+["Allen Iverson","PG",31.1,3.8,5.4,2.2,0.2,42.0,30.0,"PHI",93,50,947,0.13,0.30,0.780,0.313],
+["Tracy McGrady","SG",32.1,6.5,5.5,1.7,0.9,45.0,30.0,"ORL",93,55,1503,0.28,0.28,0.746,0.338],
+["Yao Ming","C",25.0,9.4,1.8,0.4,2.0,52.0,28.0,"HOU",90,78,2397,0.00,0.40,0.833,0.20],
+["Jason Kidd","PG",18.7,7.3,9.8,2.2,0.3,41.0,26.0,"NJN",90,80,467,0.28,0.20,0.785,0.349],
+["Gary Payton","PG",24.2,4.6,8.7,2.4,0.2,48.0,22.0,"SEA",90,88,56,0.12,0.22,0.729,0.317],
+["Ben Wallace","C",9.7,13.0,1.6,1.4,2.4,47.0,20.0,"DET",88,92,1112,0.00,0.30,0.414,0.15],
+["Chris Webber","PF",27.1,11.1,5.5,1.7,1.7,49.0,24.0,"SAC",89,62,185,0.03,0.26,0.649,0.299],
+["Chauncey Billups","PG",17.0,3.0,7.2,1.0,0.2,42.0,18.0,"DET",87,68,1497,0.36,0.28,0.894,0.387],
+["Rasheed Wallace","PF",19.4,7.4,2.0,1.3,1.3,45.0,16.0,"POR",85,78,739,0.22,0.18,0.721,0.336],
+["Elton Brand","PF",20.0,10.0,2.6,1.0,2.5,50.0,18.0,"LAC",86,72,1882,0.01,0.30,0.736,0.18],
+["Baron Davis","PG",22.9,4.4,8.1,2.4,0.4,43.0,17.0,"GSW",86,60,1884,0.30,0.24,0.711,0.320],
+["Joe Johnson","SG",25.0,4.4,5.8,1.0,0.2,44.0,18.0,"ATL",86,52,2207,0.30,0.20,0.800,0.371],
+["Grant Hill","SF",25.8,6.6,5.2,1.5,0.6,48.0,20.0,"DET",88,60,255,0.08,0.30,0.769,0.314],
+["Dikembe Mutombo","C",11.0,12.6,1.0,0.4,3.3,51.0,14.0,"ATL",84,90,87,0.00,0.35,0.684,0.15],
+["Carlos Boozer","PF",20.0,11.5,3.0,1.0,0.5,54.0,16.0,"UTA",85,48,2430,0.02,0.26,0.709,0.20]
 ];
 /* 生成底薪角色球員（虛構），給擴張隊開局墊底 */
 function genRoles(n){
   const arr=[];
   for(let i=0;i<n;i++){
-    const ovr=ri(65,73);
+    const ovr=ri(65,73),pos=["PG","SG","SF","PF","C","SG","SF","PF"][i%8],sh=genShoot(pos);
     arr.push({id:"g"+Date.now().toString(36)+i+Math.floor(Math.random()*1e4).toString(36),
       name:FN[ri(0,FN.length-1)]+" "+LN[ri(0,LN.length-1)],
-      pos:["PG","SG","SF","PF","C","SG","SF","PF"][i%8],
+      pos,
       pts:+(ovr*0.16+rnd(-1.5,1.5)).toFixed(1),reb:+rnd(2,6).toFixed(1),ast:+rnd(1,4).toFixed(1),
       stl:+rnd(0.3,1.1).toFixed(1),blk:+rnd(0.2,1).toFixed(1),fg:+rnd(43,50).toFixed(1),
-      sal:+rnd(2.0,5.5).toFixed(1),ovr,drtg:Math.max(35,Math.min(78,ovr-8+ri(-6,6))),pot:0,sta:100,inj:0,yrs:ri(1,3),form:0,mv:0,mvH:[]});
+      sal:+rnd(2.0,5.5).toFixed(1),ovr,drtg:Math.max(35,Math.min(78,ovr-8+ri(-6,6))),ft:sh.ft,p3:sh.p3,pot:0,sta:100,inj:0,yrs:ri(1,3),form:0,mv:0,mvH:[]});
   }
   return arr;
 }
@@ -671,7 +672,7 @@ function clonePlayer(src){
   const ovr=(src[10]!=null?src[10]:calcOvr(src));
   return {id:"c"+Date.now().toString(36)+Math.floor(Math.random()*1e9).toString(36),
     name:src[0],pos:src[1],pts:src[2],reb:src[3],ast:src[4],stl:src[5],blk:src[6],fg:src[7],
-    sal:src[8],team:src[9]||"",ovr,drtg:src[11]!=null?src[11]:60,pid:src[12]||0,t3r:src[13]!=null?src[13]:null,ftr:src[14]!=null?src[14]:null,sta:100,inj:0,yrs:0,pot:0,form:0,mv:0,mvH:[]};
+    sal:src[8],team:src[9]||"",ovr,drtg:src[11]!=null?src[11]:60,pid:src[12]||0,t3r:src[13]!=null?src[13]:null,ftr:src[14]!=null?src[14]:null,ft:src[15]!=null?src[15]:null,p3:src[16]!=null?src[16]:null,sta:100,inj:0,yrs:0,pot:0,form:0,mv:0,mvH:[]};
 }
 /* 開局起手：從真實資料庫抽 n 名「中低段普通真實球員」（非虛構），不含指定排除名 */
 function giftRoles(n,exclude){
@@ -846,8 +847,18 @@ function nextSlot(t){
 /* ============ 比賽模擬 ============ */
 /* ============ 逐球模擬引擎（玩家比賽用，AI 比賽用快速版） ============ */
 const THREE_P={PG:0.40,SG:0.42,SF:0.36,PF:0.26,C:0.12};
-const FOUL_P=0.06; // 每次出手被犯規的基準機率（再乘上球員造犯規傾向）
-function ftPct(p){return Math.max(0.55,Math.min(0.92,0.74+(((p&&p.ovr)||75)-75)*0.004));} // 罰球命中率（依 OVR 微調）
+const FOUL_P=0.075; // 每次出手被犯規的基準機率（再乘上球員造犯規傾向）
+/* ft/p3 缺欄後備（舊存檔、無資料球員）：ft 依位置估、p3 依 FG% 估，集中管理 */
+const EST_FT={PG:0.80,SG:0.79,SF:0.76,PF:0.71,C:0.65};
+function estP3(p){const r3=(p&&p.t3r!=null)?p.t3r:(THREE_P[p&&p.pos]||0.3); // 常投三分者通常較準
+  return Math.max(0.24,Math.min(0.385,0.265+r3*0.20+Math.max(0,(((p&&p.fg)||47)-45))*0.002));}
+function pFt(p){return (p&&p.ft!=null)?p.ft:(EST_FT[p&&p.pos]||0.75);}
+function pP3(p){return (p&&p.p3!=null)?p.p3:estP3(p);}
+/* 生成虛構球員（角色/新秀）的 ft/p3：ft 依位置分佈、p3 與該位置三分出手率正相關 */
+const GEN_FT={PG:[0.72,0.88],SG:[0.72,0.88],SF:[0.70,0.84],PF:[0.65,0.80],C:[0.55,0.78]};
+function genShoot(pos){const f=GEN_FT[pos]||[0.68,0.82],r3=THREE_P[pos]||0.3;
+  return {ft:+rnd(f[0],f[1]).toFixed(3),p3:+(0.24+r3*0.28+rnd(-0.015,0.035)).toFixed(3)};}
+function ftPct(p){return Math.max(0.40,Math.min(0.95,pFt(p)+((p&&p.form)||0)*0.0025));} // 罰球命中率＝真實生涯 ft ± 狀態微調（≤±0.02）
 function wpick(ws){let s=0;for(const w of ws)s+=w;if(s<=0)return 0;let r=Math.random()*s;for(let i=0;i<ws.length;i++){r-=ws[i];if(r<=0)return i;}return ws.length-1;}
 // 防守對位（預設）：雙方先發各依「位置順序」排好，依序對位 → C對C、F對F、G對G。之後玩家可手動互換
 function matchupPairs(offSt,defSt){
@@ -856,14 +867,6 @@ function matchupPairs(offSt,defSt){
   const n=Math.min(o.length,d.length),pairs=[];
   for(let i=0;i<n;i++)pairs.push({off:o[i],def:d[i]});
   return pairs;
-}
-// O 進攻 → 每位先發出手者對應的防守者（D 的先發）。useMine=true 時，O=對手、D=我隊，套用玩家手動指派 S.defByOpp
-function buildDefMap(O,D,useMine){
-  const m={};matchupPairs(O.starters,D.starters).forEach(pr=>{m[pr.off.id]=pr.def;}); // 預設就近配對
-  if(useMine&&S&&S.defByOpp){
-    O.starters.forEach(op=>{const did=S.defByOpp[op.id];const d=did&&D.starters.find(x=>x.id===did);if(d)m[op.id]=d;});
-  }
-  return m;
 }
 const HANDLE={PG:1.0,SG:0.85,SF:0.68,PF:0.52,C:0.42},SIZE={PG:0,SG:0.5,SF:1.5,PF:3,C:4.5};
 function effW(w){return (w.p.ovr+(w.p.form||0)*0.6)*(0.72+0.28*Math.max(0,w.sta)/100);}
@@ -916,16 +919,31 @@ function trip(O,D){const tac=O.tac||{t:'none'},tovB=tac.t==='run'?1.08:1;const d
     if(D.qf>4){const fr=O.live[wpick(O.live.map(w=>usageW(w,{t:'none'})))];let m=0;for(let i=0;i<2;i++)if(Math.random()<ftPct(fr.p))m++;fr.fta+=2;fr.ftm+=m;fr.pts+=m;fr.qp+=m;return {pts:m,evs:[{k:'ft',oid:fr.p.id,did:df.p.id,t:LnP(fr.p)+' 團隊犯規兩罰中 '+m,d:{o:fr.p.id,fta:2,ftm:m,pts:m,pf:df.p.id}}]};}}
   if(Math.random()<Math.max(0.012,Math.min(0.12,0.055*tovB*((hD.p.stl||0.8)/1.2)/(HANDLE[h.p.pos]+h.p.ovr*0.004)))){hD.stl++;h.tov++;return {pts:0,evs:[{k:'stl',oid:h.p.id,did:hD.p.id,t:LnP(hD.p)+' 半場抄走 '+LnP(h.p),d:{o:h.p.id,tov:1,stl:hD.p.id}}]};}
   const S2=O.live[wpick(O.live.map(w=>usageW(w,tac)))],Dg=dmap[S2.p.id]||D.live[0];let passer=null;
-  if(Math.random()<(tac.t==='share'?0.80:0.70)){const mates=O.live.filter(w=>w!==S2),pp=mates[wpick(mates.map(w=>Math.max(0.3,w.p.ast)))],pD=dmap[pp.p.id]||D.live[0];
+  if(Math.random()<(tac.t==='share'?0.76:0.66)){const mates=O.live.filter(w=>w!==S2),pp=mates[wpick(mates.map(w=>Math.max(0.3,w.p.ast)))],pD=dmap[pp.p.id]||D.live[0];
     if(Math.random()<Math.max(0.01,Math.min(0.11,0.045*((pD.p.stl||0.8)/1.2)))){pD.stl++;pp.tov++;return {pts:0,evs:[{k:'stl',oid:pp.p.id,did:pD.p.id,t:LnP(pD.p)+' 抄掉 '+LnP(pp.p)+' 的傳球',d:{o:pp.p.id,tov:1,stl:pD.p.id}}]};}passer=pp;}
   if(Math.random()<0.075*tovB){S2.tov++;return {pts:0,evs:[{k:'tov',oid:S2.p.id,t:LnP(S2.p)+' 進攻失誤',d:{o:S2.p.id,tov:1}}]};}
   let _t3=(S2.p.t3r!=null?S2.p.t3r:(THREE_P[S2.p.pos]||0.3));if(tac.t==='three')_t3*=1.5;else if(tac.t==='inside')_t3*=0.45;
   const three=Math.random()<Math.max(0.02,Math.min(0.90,_t3));
   const sw=three?'三分':(Math.random()<0.45?'中距離':(Math.random()<0.6?'切入':'跳投'));
-  if(Math.random()<Math.max(0,Math.min(0.22,(Dg.p.blk||0.5)*0.078*(three?0.4:1.2)*(tac.t==='inside'?1.25:1)))){Dg.blk++;S2.fga++;if(three)S2.t3a++;const rb=D.live[wpick(D.live.map(w=>rebN(w.p)))];rb.reb++;return {pts:0,evs:[{k:'blk',oid:S2.p.id,did:Dg.p.id,three,t:LnP(Dg.p)+' 火鍋蓋掉 '+LnP(S2.p)+'！',d:{o:S2.p.id,fga:1,t3a:three?1:0,blk:Dg.p.id,reb:rb.p.id}}]};}
+  let _bp=Math.max(0,(Dg.p.blk||0.5)*0.078*(three?0.4:1.2)*(tac.t==='inside'?1.25:1)),_hb=null; // 對位封阻＋（兩分限定）場上最強護框者協防
+  if(!three){const hb=D.live.reduce((m,w)=>((w.p.blk||0)>(m?(m.p.blk||0):-1)?w:m),null);if(hb&&hb!==Dg){_hb=hb;_bp+=(hb.p.blk||0)*0.03;}}
+  if(Math.random()<Math.min(0.22,_bp)){const bk=(_hb&&Math.random()<((_hb.p.blk||0)*0.03)/_bp)?_hb:Dg;bk.blk++;S2.fga++;if(three)S2.t3a++;
+    if(Math.random()<0.4){const rb=O.live[wpick(O.live.map(w=>(w.p.reb||3)+0.5))];rb.reb++;const bev={k:'blk',oid:S2.p.id,did:bk.p.id,three,t:LnP(bk.p)+' 火鍋蓋掉 '+LnP(S2.p)+'！'+LnP(rb.p)+' 搶回進攻籃板',d:{o:S2.p.id,fga:1,t3a:three?1:0,blk:bk.p.id,reb:rb.p.id}};
+      if(Math.random()<0.45){rb.fga++;rb.fgm++;rb.pts+=2;rb.qp+=2;return {pts:2,evs:[bev,{k:'m2',off:true,oid:rb.p.id,t:LnP(rb.p)+' 補籃得手 2 分',d:{o:rb.p.id,fga:1,fgm:1,pts:2}}]};}
+      return {pts:0,evs:[bev]};}
+    const rb=D.live[wpick(D.live.map(w=>rebN(w.p)))];rb.reb++;return {pts:0,evs:[{k:'blk',oid:S2.p.id,did:bk.p.id,three,t:LnP(bk.p)+' 火鍋蓋掉 '+LnP(S2.p)+'！',d:{o:S2.p.id,fga:1,t3a:three?1:0,blk:bk.p.id,reb:rb.p.id}}]};}
   let _fm=Math.pow((S2.p.ftr!=null?S2.p.ftr:0.22)/0.22,1.4);if(tac.t==='foul')_fm*=1.3;if(tac.t==='inside')_fm*=1.3;
-  const fouled=Math.random()<0.06*Math.max(0.35,Math.min(3.3,_fm));
-  let mp=Math.max(0.28,Math.min(0.575,0.54+(effW(S2)-80)*0.0022+((S2.p.fg||47)-47)*0.003-((Dg.p.drtg||60)-62)*0.0022-(three?0.155:0)-Math.max(0,Math.min(0.18,(S2.pts-24)*0.008))+(tac.t==='inside'?0.009:0)+(tac.t==='run'?0.012:0)+(tac.t==='share'?0.014:0)+(tac.t==='feed'&&S2.p.id===tac.target?-0.008:0)));
+  const fouled=Math.random()<FOUL_P*Math.max(0.35,Math.min(3.3,_fm));
+  // 命中率：兩分以 fg 為基底、三分以真實 p3 為基底；有傳導（空檔）干擾打 6 折＋小加成；內線兩分再看身材差
+  const tacAdj=(tac.t==='inside'?0.009:0)+(tac.t==='run'?0.012:0)+(tac.t==='share'?0.014:0)+(tac.t==='feed'&&S2.p.id===tac.target?-0.008:0);
+  const starP=Math.max(0,Math.min(0.18,(S2.pts-24)*0.008));
+  let cont=((Dg.p.drtg||60)-62)*(three?0.0016:0.0022);
+  if(!three&&sw==='切入')cont+=((SIZE[Dg.p.pos]||0)-(SIZE[S2.p.pos]||0))*0.004;
+  if(passer)cont*=0.6;
+  const open=passer?0.01:0,home=O.home?0.013:0;
+  let mp=three
+    ?Math.max(0.22,Math.min(0.48,pP3(S2.p)+(effW(S2)-88)*0.0015-cont-starP*0.6+open+home+tacAdj))
+    :Math.max(0.30,Math.min(0.65,0.525+(effW(S2)-80)*0.0022+((S2.p.fg||47)-47)*0.003-cont-starP+open+home+tacAdj));
   if(Math.random()<mp){const val=three?3:2;S2.fga++;S2.fgm++;S2.pts+=val;S2.qp+=val;if(three){S2.t3a++;S2.t3m++;}
     const d={o:S2.p.id,fga:1,fgm:1,t3a:three?1:0,t3m:three?1:0,pts:val};let tail='';
     if(passer){passer.ast++;d.ast=passer.p.id;tail='（'+LnP(passer.p)+' 助攻）';}
@@ -933,14 +951,15 @@ function trip(O,D){const tac=O.tac||{t:'none'},tovB=tac.t==='run'?1.08:1;const d
     return {pts:d.pts,evs:[{k:three?'m3':'m2',off:true,oid:S2.p.id,did:Dg.p.id,three,t:LnP(S2.p)+' '+sw+(three?'命中':'命中 '+val+' 分')+tail,d}]};}
   if(fouled){const n=three?3:2;let m=0;for(let i=0;i<n;i++)if(Math.random()<ftPct(S2.p))m++;S2.fta+=n;S2.ftm+=m;S2.pts+=m;S2.qp+=m;const fp=(Math.random()<0.55?D.live[Math.floor(Math.random()*D.live.length)]:Dg);fp.pf++;D.qf++;return {pts:m,evs:[{k:'ft',oid:S2.p.id,did:fp.p.id,t:LnP(S2.p)+' '+sw+'出手遭犯規，'+n+' 罰中 '+m,d:{o:S2.p.id,fta:n,ftm:m,pts:m,pf:fp.p.id}}]};}
   S2.fga++;if(three)S2.t3a++;
-  if(Math.random()<(tac.t==='inside'?0.27:0.22)){const rb=O.live[wpick(O.live.map(w=>(w.p.reb||3)+0.5))];rb.reb++;const missEv={k:'miss',oid:S2.p.id,three,t:'',d:{o:S2.p.id,fga:1,t3a:three?1:0,reb:rb.p.id}};
+  if(Math.random()<(tac.t==='inside'?0.30:0.26)){const rb=O.live[wpick(O.live.map(w=>(w.p.reb||3)+0.5))];rb.reb++;const missEv={k:'miss',oid:S2.p.id,three,t:'',d:{o:S2.p.id,fga:1,t3a:three?1:0,reb:rb.p.id}};
     if(Math.random()<0.52){rb.fga++;rb.fgm++;rb.pts+=2;rb.qp+=2;return {pts:2,evs:[missEv,{k:'m2',off:true,oid:rb.p.id,t:LnP(S2.p)+' '+sw+'不進，'+LnP(rb.p)+' 進攻籃板補進 2 分',d:{o:rb.p.id,fga:1,fgm:1,pts:2}}]};}
     rb.fga++;const d2=D.live[wpick(D.live.map(w=>rebN(w.p)))];d2.reb++;return {pts:0,evs:[missEv,{k:'miss',oid:rb.p.id,t:'',d:{o:rb.p.id,fga:1,reb:d2.p.id}}]};}
   let dd={o:S2.p.id,fga:1,t3a:three?1:0};if(Math.random()>0.13){const rb=D.live[wpick(D.live.map(w=>rebN(w.p)))];rb.reb++;dd.reb=rb.p.id;}
   return {pts:0,evs:[{k:'miss',oid:S2.p.id,three,t:'',d:dd}]};}
-function simGameDetailed(ta,tb,meIdx){const A=engTeam(ta,meIdx===0,ta.name||'A'),B=engTeam(tb,meIdx===1,tb.name||'B'),nameA=A.name,nameB=B.name;
+function simGameDetailed(ta,tb,meIdx,homeIdx){const A=engTeam(ta,meIdx===0,ta.name||'A'),B=engTeam(tb,meIdx===1,tb.name||'B'),nameA=A.name,nameB=B.name;
+  A.home=homeIdx!==1;B.home=homeIdx===1; // 主場優勢：主隊命中率小幅加成（未指定時第一隊視為主場）
   A.tac=meIdx===0?(S.tactic||{t:'none'}):aiTactic(ta);B.tac=meIdx===1?(S.tactic||{t:'none'}):aiTactic(tb);
-  const qa=[],qb=[],evts=[],qsum=[],pbp=[];let sa=0,sb=0;const QP=Math.round(26*(1+((A.tac.t==='run'||B.tac.t==='run')?0.12:0))),dt=2880/(QP*2*4);
+  const qa=[],qb=[],evts=[],qsum=[],pbp=[];let sa=0,sb=0;const QP=Math.round(25*(1+((A.tac.t==='run'||B.tac.t==='run')?0.12:0))),dt=2880/(QP*2*4);
   const decA=A.tac.t==='run'?0.48:0.42,decB=B.tac.t==='run'?0.48:0.42;
   const tipS=T=>T.live.reduce((m,w)=>Math.max(m,w.p.ovr+(SIZE[w.p.pos]||0)*2),0);
   let off=Math.random()<1/(1+Math.exp(-(tipS(A)-tipS(B))*0.15))?A:B;
@@ -1051,7 +1070,7 @@ function playRegularRound(){
       const A=teamOf(a),B=teamOf(b);
       if(a===0&&!legalMe()){addL(0);addW(b);S.log.unshift({type:"forfeit",t:Date.now(),msg:"陣容不足或超帽，本場棄賽判負 vs "+B.name});return;}
       if(b===0&&!legalMe()){addL(0);addW(a);S.log.unshift({type:"forfeit",t:Date.now(),msg:"陣容不足或超帽，本場棄賽判負 vs "+A.name});return;}
-      const g=simGameDetailed(A,B,a===0?0:1); // 玩家比賽 → 逐球引擎
+      const g=simGameDetailed(A,B,a===0?0:1,0); // 玩家比賽 → 逐球引擎；賽程 [a,b] 前者為主場（雙循環正反各一次）
       if(g.sa>g.sb){addW(a);addL(b);}else{addW(b);addL(a);}
       g.injuries=[...applyFatigueInjury(A,a===0,g.sa>g.sb),...applyFatigueInjury(B,b===0,g.sb>g.sa)];
       const me=a===0,win=me?g.sa>g.sb:g.sb>g.sa;
@@ -1103,7 +1122,7 @@ function playSeriesGame(s,roundLabel){
     if(quickWin(A,B))s.wa++;else s.wb++;
     return;
   }
-  const g=simGameDetailed(A,B,s.a===0?0:1);
+  const g=simGameDetailed(A,B,s.a===0?0:1,[0,1,4,6].includes(s.wa+s.wb)?0:1); // 高種子 2-2-1-1-1 主場（第 1,2,5,7 戰）
   if(g.sa>g.sb)s.wa++;else s.wb++;
   s.hist.push({sa:g.sa,sb:g.sb});
   g.injuries=[...applyFatigueInjury(A,s.a===0,g.sa>g.sb),...applyFatigueInjury(B,s.b===0,g.sb>g.sa)];
@@ -1206,13 +1225,13 @@ const LN=["Whitfield","Brooks","Sterling","Hayes","Vance","Okafor","Mercer","Don
 function genRookies(n){
   const arr=[];
   for(let i=0;i<n;i++){
-    const ovr=Math.max(70,Math.round(84-i*1.1+rnd(-2,2)));
+    const ovr=Math.max(70,Math.round(84-i*1.1+rnd(-2,2))),pos=["PG","SG","SF","PF","C"][ri(0,4)],sh=genShoot(pos);
     S.rookieN++;
     arr.push({id:"r"+S.season+"_"+i,name:FN[ri(0,FN.length-1)]+" "+LN[ri(0,LN.length-1)],
-      pos:["PG","SG","SF","PF","C"][ri(0,4)],
+      pos,
       pts:+(ovr*0.22+rnd(-2,2)).toFixed(1),reb:+rnd(2,7).toFixed(1),ast:+rnd(1,5).toFixed(1),
       stl:+rnd(0.4,1.4).toFixed(1),blk:+rnd(0.2,1.2).toFixed(1),fg:+rnd(42,50).toFixed(1),
-      sal:+(9-i*0.45).toFixed(1),ovr,drtg:Math.max(40,Math.min(80,ovr-6+ri(-6,6))),pot:Math.min(99,ovr+ri(3,12)),sta:100,inj:0,yrs:3,form:0,mv:0,mvH:[]});
+      sal:+(9-i*0.45).toFixed(1),ovr,drtg:Math.max(40,Math.min(80,ovr-6+ri(-6,6))),ft:sh.ft,p3:sh.p3,pot:Math.min(99,ovr+ri(3,12)),sta:100,inj:0,yrs:3,form:0,mv:0,mvH:[]});
   }
   return arr;
 }
@@ -1330,13 +1349,13 @@ async function load(){try{const r=await window.storage.get("nba_gm_idle");if(r&&
     const _byName={};DB.forEach(r=>{_byName[r[0]]=r;});
     const _fix=p=>{if(!p)return;const r=_byName[p.name];
       if(r){p.pts=r[2];p.reb=r[3];p.ast=r[4];p.stl=r[5];p.blk=r[6];p.fg=r[7];
-        if(r[1])p.pos=r[1];if(r[10]!=null)p.ovr=r[10];if(r[11]!=null)p.drtg=r[11];if(r[12])p.pid=r[12];if(r[13]!=null)p.t3r=r[13];if(r[14]!=null)p.ftr=r[14];if(!p.team)p.team=r[9]||"";}
+        if(r[1])p.pos=r[1];if(r[10]!=null)p.ovr=r[10];if(r[11]!=null)p.drtg=r[11];if(r[12])p.pid=r[12];if(r[13]!=null)p.t3r=r[13];if(r[14]!=null)p.ftr=r[14];if(r[15]!=null)p.ft=r[15];if(r[16]!=null)p.p3=r[16];if(!p.team)p.team=r[9]||"";}
       if(p.drtg==null)p.drtg=60;};
     // 傳奇球星：依名字用最新 LEGENDS 校正能力值（保留已簽約薪資/年限），修正舊存檔的錯誤數值
     const _byLeg={};LEGENDS.forEach(r=>{_byLeg[r[0]]=r;});
     const _fixLeg=p=>{if(!p)return;const r=_byLeg[p.name];if(!r)return;
       p.pts=r[2];p.reb=r[3];p.ast=r[4];p.stl=r[5];p.blk=r[6];p.fg=r[7];
-      p.pos=r[1];p.ovr=r[10];p.drtg=r[11];if(r[12])p.pid=r[12];p.t3r=r[13];p.ftr=r[14];
+      p.pos=r[1];p.ovr=r[10];p.drtg=r[11];if(r[12])p.pid=r[12];p.t3r=r[13];p.ftr=r[14];if(r[15]!=null)p.ft=r[15];if(r[16]!=null)p.p3=r[16];
       p.legend=true;p.mv=mvBase(p);};
     allPlayers().forEach(p=>{_fix(p);_fixLeg(p);});
     if(S.draft&&S.draft.pool)S.draft.pool.forEach(p=>{_fix(p);_fixLeg(p);});

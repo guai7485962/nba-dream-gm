@@ -982,7 +982,11 @@ function simGameDetailed(ta,tb,meIdx,homeIdx){const A=engTeam(ta,meIdx===0,ta.na
   const matchup=oppSt.map((op,i)=>{let d=mySt[Math.min(i,mySt.length-1)];const did=(typeof S!=='undefined'&&S&&S.defByOpp)?S.defByOpp[op.p.id]:null;if(did){const od=mySt.find(x=>x.p.id===did);if(od)d=od;} // 套用玩家手動對位覆寫（與 liveDefMap 一致），找不到防守者則退回預設配對
     return {oppN:LnP(op.p),oppPos:op.p.pos,oppOvr:op.p.ovr,meN:d?LnP(d.p):'-',mePos:d?d.p.pos:'',meDr:d?(d.p.drtg||'-'):''};});
   const lineOf=T=>T.players.map(w=>({id:w.p.id,n:LnP(w.p),pos:w.p.pos,pid:w.p.pid||0,ovr:w.p.ovr,st:w.start}));
-  return {sa,sb,qa,qb,boxA:mkBox(A),boxB:mkBox(B),evts:hi,qsum,matchup,myName:myR.name,pbp,nA:nameA,nB:nameB,myIsA:meIdx===0,lineA:lineOf(A),lineB:lineOf(B),tacA:tacName(A.tac),tacB:tacName(B.tac)};}
+  // 球隊整體統計 = 該隊所有球員各欄位加總（直接取用引擎累加值，確保與 box score 逐項一致）
+  const mkTeam=T=>{const s={pts:0,reb:0,ast:0,stl:0,blk:0,tov:0,pf:0,fgm:0,fga:0,t3m:0,t3a:0,ftm:0,fta:0};
+    T.players.forEach(w=>{s.pts+=w.pts;s.reb+=w.reb;s.ast+=w.ast;s.stl+=w.stl;s.blk+=w.blk;s.tov+=w.tov;s.pf+=w.pf;s.fgm+=w.fgm;s.fga+=w.fga;s.t3m+=w.t3m;s.t3a+=w.t3a;s.ftm+=w.ftm;s.fta+=w.fta;});
+    s.fgp=s.fga?+(s.fgm/s.fga*100).toFixed(1):null;s.t3p=s.t3a?+(s.t3m/s.t3a*100).toFixed(1):null;s.ftp=s.fta?+(s.ftm/s.fta*100).toFixed(1):null;return s;};
+  return {sa,sb,qa,qb,boxA:mkBox(A),boxB:mkBox(B),teamStats:{A:mkTeam(A),B:mkTeam(B)},evts:hi,qsum,matchup,myName:myR.name,pbp,nA:nameA,nB:nameB,myIsA:meIdx===0,lineA:lineOf(A),lineB:lineOf(B),tacA:tacName(A.tac),tacB:tacName(B.tac)};}
 function simGame(ta,tb,meIdx){
   const pa=power(ta,meIdx===0)||50,pb=power(tb,meIdx===1)||50;
   const qa=[],qb=[];let sa=0,sb=0;
@@ -1825,6 +1829,36 @@ function showBoxscore(idx){
       <div class="lbx-wrap"><table class="boxtbl"><thead><tr><th style="text-align:left">球員</th><th>分</th><th>得</th><th>籃</th><th>助</th><th>投</th><th>三分</th><th>罰</th><th>抄</th><th>帽</th><th>失</th><th>犯</th></tr></thead>
       <tbody>${rows}</tbody></table></div></div>`;
   };
+  // 📊 球隊數據對照：三欄式（我方 | 項目 | 對手），數值直接取自 teamStats（＝球員 box score 加總）
+  const teamCmp=(ts,L)=>{
+    const A=ts.A,B=ts.B,pct=v=>v==null?"-":v+"%";
+    const cell=(txt,sub)=>txt+(sub!=null?` <span class="muted" style="font-size:9px">${pct(sub)}</span>`:"");
+    // lowGood=true 代表數值越低越好（失誤／犯規），用於高亮較優的一方
+    const rows=[
+      ["得分",A.pts,B.pts,false],
+      ["投籃 FG",cell(A.fgm+"-"+A.fga,A.fgp),cell(B.fgm+"-"+B.fga,B.fgp),null],
+      ["三分 3P",cell(A.t3m+"-"+A.t3a,A.t3p),cell(B.t3m+"-"+B.t3a,B.t3p),null],
+      ["罰球 FT",cell(A.ftm+"-"+A.fta,A.ftp),cell(B.ftm+"-"+B.fta,B.ftp),null],
+      ["籃板 REB",A.reb,B.reb,false],
+      ["助攻 AST",A.ast,B.ast,false],
+      ["抄截 STL",A.stl,B.stl,false],
+      ["阻攻 BLK",A.blk,B.blk,false],
+      ["失誤 TOV",A.tov,B.tov,true],
+      ["犯規 PF",A.pf,B.pf,true]
+    ];
+    const hl="font-weight:700;color:var(--led)";
+    const body=rows.map(([lab,av,bv,lowGood])=>{
+      let aS="",bS="";
+      if(lowGood!=null&&typeof av==="number"&&typeof bv==="number"&&av!==bv){
+        const aBetter=lowGood?av<bv:av>bv;if(aBetter)aS=hl;else bS=hl;
+      }
+      return `<tr><td style="text-align:right;width:38%;${aS}">${av}</td><td class="muted" style="text-align:center;white-space:nowrap;font-size:11px">${lab}</td><td style="text-align:left;width:38%;${bS}">${bv}</td></tr>`;
+    }).join("");
+    const nm=(n,mine)=>`<span style="${mine?"color:var(--led);font-weight:700":"font-weight:600"}">${mine?"★":""}${n}</span>`;
+    return `<div class="card" style="padding:8px 10px"><div class="muted" style="font-weight:700;color:var(--led);margin-bottom:4px">📊 球隊數據對照</div>
+      <div class="lbx-wrap"><table class="boxtbl" style="width:100%"><thead><tr><th style="text-align:right">${nm(L.a,L.meA)}</th><th></th><th style="text-align:left">${nm(L.b,!L.meA)}</th></tr></thead>
+      <tbody>${body}</tbody></table></div></div>`;
+  };
   const bg=document.createElement("div");bg.className="modal-bg";
   bg.innerHTML=`<div class="modal">
     <div class="scoreboard">
@@ -1844,6 +1878,7 @@ function showBoxscore(idx){
     ${sided(L.a,g.boxA,L.meA)}
     ${sided(L.b,g.boxB,!L.meA)}
     <div class="muted" style="font-size:11px;text-align:center;margin:4px 0">● = 先發　數據為單場模擬結果</div>
+    ${g.teamStats?teamCmp(g.teamStats,L):""}
     ${g.matchup&&g.matchup.length?`<div class="card" style="padding:8px 10px"><div class="muted" style="font-weight:700;color:var(--led);margin-bottom:4px">🛡 本場防守對位（你的防守者 守 對手）</div>${g.matchup.map(m=>`<div class="flex" style="gap:6px;align-items:center;font-size:12px;padding:3px 0;border-bottom:1px solid var(--line)"><span style="flex:1;text-align:left;font-weight:600">${m.meN}<span class="muted" style="font-size:9px"> ${m.mePos}・防${m.meDr}</span></span><span style="color:var(--maple);font-size:11px">守</span><span style="flex:1;text-align:right;font-weight:600">${m.oppN}<span class="muted" style="font-size:9px"> ${m.oppPos}・OVR${m.oppOvr}</span></span></div>`).join("")}</div>`:""}
     ${g.qsum&&g.qsum.length?`<div class="card" style="padding:8px 10px"><div class="muted" style="font-weight:700;color:var(--led);margin-bottom:4px">📊 逐節摘要</div>${g.qsum.map(s=>`<div style="font-size:12px;padding:3px 0;border-bottom:1px solid var(--line)">${s}</div>`).join("")}</div>`:""}
     ${g.evts&&g.evts.length?`<div class="card" style="padding:8px 10px"><div class="muted" style="font-weight:700;color:var(--led);margin-bottom:4px">🎬 比賽精華</div>${g.evts.map(e=>`<div style="font-size:12px;padding:3px 0;display:flex;gap:8px;align-items:baseline"><span class="muted" style="width:60px;flex-shrink:0;font-family:Menlo,monospace;font-size:10px">${e.c}</span><span style="flex:1">${e.t}</span><span class="muted" style="font-family:Menlo,monospace;font-size:10px">${e.s}</span></div>`).join("")}</div>`:""}
@@ -1865,7 +1900,20 @@ function gameToText(L){
   let t=`【${L.label||'比賽'}】${L.a} ${g.sa} : ${g.sb} ${L.b}`+(g.qa&&g.qa.length>4?'（延長賽）':'')+`\n`;
   if(g.tacA||g.tacB)t+=`戰術　${L.a}：${g.tacA||'無戰術'}　/　${L.b}：${g.tacB||'無戰術'}\n`;
   if(g.qa)t+=`各節　${L.a}: ${g.qa.join(' / ')}　｜　${L.b}: ${g.qb.join(' / ')}\n`;
-  if(g.matchup&&g.matchup.length)t+=`\n防守對位（我方防守者 守 對手）\n`+g.matchup.map(m=>`  ${m.meN}(${m.mePos}·防${m.meDr}) 守 ${m.oppN}(${m.oppPos}·OVR${m.oppOvr})`).join('\n')+'\n';
+  if(g.teamStats){const A=g.teamStats.A,B=g.teamStats.B,pc=v=>v==null?'-':v+'%';
+    const pad=s=>{s=String(s);return s+' '.repeat(Math.max(0,12-s.length));};
+    const rw=(lab,a,b)=>`  ${pad(lab)}${pad(a)}| ${b}`;
+    t+=`\n球隊數據對照（${L.a} ｜ ${L.b}）\n`
+      +rw('得分',A.pts,B.pts)+'\n'
+      +rw('投籃FG',A.fgm+'-'+A.fga+' '+pc(A.fgp),B.fgm+'-'+B.fga+' '+pc(B.fgp))+'\n'
+      +rw('三分3P',A.t3m+'-'+A.t3a+' '+pc(A.t3p),B.t3m+'-'+B.t3a+' '+pc(B.t3p))+'\n'
+      +rw('罰球FT',A.ftm+'-'+A.fta+' '+pc(A.ftp),B.ftm+'-'+B.fta+' '+pc(B.ftp))+'\n'
+      +rw('籃板REB',A.reb,B.reb)+'\n'
+      +rw('助攻AST',A.ast,B.ast)+'\n'
+      +rw('抄截STL',A.stl,B.stl)+'\n'
+      +rw('阻攻BLK',A.blk,B.blk)+'\n'
+      +rw('失誤TOV',A.tov,B.tov)+'\n'
+      +rw('犯規PF',A.pf,B.pf)+'\n';}
   t+=`\n== ${L.a} ==\n`+(g.boxA||[]).map(line).join('\n');
   t+=`\n\n== ${L.b} ==\n`+(g.boxB||[]).map(line).join('\n');
   return t;

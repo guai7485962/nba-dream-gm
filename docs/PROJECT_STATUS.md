@@ -24,10 +24,10 @@
 
 ## 最近部署
 
-- 最新功能 commit：`9074ac8`（改用 Jason Kidd 彩色頭像）
+- 最新功能 commit：`d8dc17f`（季後賽可簽約、釋出改為兩層確認）
 - Cloudflare Workers Builds：`completed / success`
 - 正式網址：`https://nba-dream-gm.guai7485962.workers.dev/`
-- 線上確認：正式 HTML 已包含 ESPN Jason Kidd `429.png` 彩色頭像覆寫，頁面更新於 2026-07-17 09:56。
+- 線上確認：2026-07-24 01:27（Asia/Taipei）正式 HTML 已包含兩層釋出確認與季後賽市場解鎖，且 `TEST_SLOT_SEC=0`；Cloudflare build `06d9166e-99f5-4bef-8ee9-63c4d97ae180` 成功。
 
 ## 2026-07-24 季後賽市場與釋出防誤觸
 

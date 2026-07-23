@@ -1279,7 +1279,6 @@ function startNewSeason(){
 
 /* ============ 簽約 / 釋出 / 交易 ============ */
 function sign(id){
-  if(S.phase==="playoffs")return toast("季後賽期間禁止簽約");
   // 先找選秀開價球員（用開價簽），再找自由球員
   let p=null,from=null,oi=-1;
   if(S.draftBoard){oi=S.draftBoard.offers.findIndex(x=>x.id===id);if(oi>=0){p=S.draftBoard.offers[oi];from="draft";}}
@@ -1295,11 +1294,35 @@ function sign(id){
   if(!S.starters||S.starters.length<5)S.starters=autoStarters(S.roster);
   save();render();toast("已簽下 "+p.name+"（$"+price+"M）");
 }
+function closeReleaseModal(){const bg=document.querySelector(".release-confirm");if(bg)bg.remove();}
 function release(id){
-  const i=S.roster.findIndex(p=>p.id===id);const p=S.roster[i];
+  const p=S.roster.find(x=>x.id===id);if(!p)return;
+  closeReleaseModal();
+  const bg=document.createElement("div");bg.className="modal-bg release-confirm";
+  bg.innerHTML=`<div class="modal">
+    <div class="tag" style="margin-bottom:10px">釋出確認 1 / 2</div>
+    <h3>確定要開始釋出 ${p.name}？</h3>
+    <p class="muted" style="line-height:1.65;margin-bottom:14px">釋出後球員會回到自由市場，並立刻從你的名單與先發陣容移除。下一步仍可取消。</p>
+    <button class="btn danger block" data-act="release-next" data-id="${p.id}">繼續確認</button>
+    <button class="btn ghost block" style="margin-top:8px" data-act="release-cancel">取消</button>
+  </div>`;
+  document.body.appendChild(bg);
+}
+function releaseNext(id){
+  const p=S.roster.find(x=>x.id===id);if(!p)return closeReleaseModal();
+  const modal=document.querySelector(".release-confirm .modal");if(!modal)return;
+  modal.innerHTML=`<div class="tag" style="margin-bottom:10px">釋出確認 2 / 2</div>
+    <h3 style="color:var(--bad)">最後確認：釋出 ${p.name}</h3>
+    <p class="muted" style="line-height:1.65;margin-bottom:14px">這是最後一步。確認後會立即生效。</p>
+    <button class="btn danger block" data-act="release-final" data-id="${p.id}">確認釋出 ${p.name}</button>
+    <button class="btn ghost block" style="margin-top:8px" data-act="release-cancel">返回球隊</button>`;
+}
+function releaseFinal(id){
+  const i=S.roster.findIndex(p=>p.id===id);if(i<0)return closeReleaseModal();
+  const p=S.roster[i];
   S.roster.splice(i,1);S.fa.push(p);S.fa.sort((a,b)=>b.ovr-a.ovr);
   S.starters=(S.starters||[]).filter(x=>x!==id);
-  save();render();toast("已釋出 "+p.name);
+  closeReleaseModal();save();render();toast("已釋出 "+p.name);
 }
 function evalTrade(){
   const t=S.ai[tradeSel.team];
@@ -1609,7 +1632,6 @@ function vMarket(){
   const poss=["ALL","PG","SG","SF","PF","C"];
   const free=!S.draftBoard.manualUsed;
   const nextT=nextDraftSlot(Date.now());
-  const lock=S.phase==="playoffs";
   const offers=S.draftBoard.offers.filter(p=>marketPos==="ALL"||p.pos===marketPos);
   const offerRow=p=>{
     const ask=p.ask||p.sal,mv=p.mv||0,gap=ask-mv;
@@ -1629,7 +1651,7 @@ function vMarket(){
       <div class="price-compare-foot"><span>開價與身價比較</span><span class="price-gap ${gapCls}">${gapText}</span></div>
     </div>
     <div class="p-stat"><span>得分<b>${p.pts}</b></span><span>籃板<b>${p.reb}</b></span><span>助攻<b>${p.ast}</b></span><span>防守<b class="d">${p.drtg||'-'}</b></span></div>
-    <div class="p-actions"><button class="btn" ${lock?'disabled':''} data-act="sign" data-id="${p.id}">${lock?'季後賽期間鎖定':'簽下球員'}</button></div>
+    <div class="p-actions"><button class="btn" data-act="sign" data-id="${p.id}">簽下球員</button></div>
   </div>`;};
   let h=`<div class="page-head"><div><div class="page-kicker">PLAYER MARKET</div><h1>球員市場</h1><div class="page-sub">比較能力與價格，補上陣容最需要的位置</div></div>
     <div class="hero-metric"><small>可用薪資</small><b style="color:${Number(room)<0?'var(--bad)':'var(--led)'}">$${room}M</b></div></div>`;
@@ -1647,7 +1669,7 @@ function vMarket(){
   const faAll=[...S.fa].sort((a,b)=>eff(b)-eff(a));
   const fa=faAll.filter(p=>marketPos==="ALL"||p.pos===marketPos);
   h+=`<div class="section-head"><div><h2>自由球員</h2><p>固定年薪，簽下後立即加入名單</p></div><span class="section-count">${fa.length} AVAILABLE</span></div>`;
-  h+=`<div class="player-list">${fa.length?fa.map(p=>pRow(p,`<button class="btn" ${lock?'disabled':''} data-act="sign" data-id="${p.id}">${lock?'季後賽期間鎖定':'以 $'+p.sal+'M 簽下'}</button>`,false,"fa")).join(""):'<div class="card empty">這個位置目前沒有自由球員</div>'}</div>`;
+  h+=`<div class="player-list">${fa.length?fa.map(p=>pRow(p,`<button class="btn" data-act="sign" data-id="${p.id}">以 $${p.sal}M 簽下</button>`,false,"fa")).join(""):'<div class="card empty">這個位置目前沒有自由球員</div>'}</div>`;
   return h;
 }
 /* --- 交易 --- */
@@ -2142,6 +2164,9 @@ document.addEventListener("click",e=>{
     case "testplay1":testPlay(1);break;
     case "testplay10":testPlay(10);break;
     case "release":release(id);break;
+    case "release-next":releaseNext(id);break;
+    case "release-final":releaseFinal(id);break;
+    case "release-cancel":closeReleaseModal();break;
     case "sign":sign(id);break;
     case "mpos":marketPos=arg;render();break;
     case "tpos":teamPos=arg;render();break;
